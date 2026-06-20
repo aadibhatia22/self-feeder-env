@@ -1,12 +1,17 @@
 <mujoco model="world">
+    <option gravity = "0 0 0" />
     <asset>
         <model name="table_model" file="table.xml"/>
+        <model name="my_robot" file="my-robot/my_robot.xml"/>
     </asset>
     <worldbody>
         <light name="top" pos="0 0 5"/>
         <geom type="plane" size="5 5 .1" pos="0 0 0"/>
         <body name="table" pos="0 0 0.051">
             <attach model="table_model" prefix="table_import"/>
+        </body>
+        <body name="my_robot" pos="0 0 0.05">
+            <attach model="my_robot" prefix="my_robot_import"/>
         </body>
     </worldbody>
 </mujoco>
