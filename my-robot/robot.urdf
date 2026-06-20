@@ -1,0 +1,153 @@
+<?xml version="1.0" ?>
+<!-- Generated using onshape-to-robot -->
+<!-- Onshape https://cad.onshape.com/documents/596508d30fcb2c414c0d1e6d/w/e9e64c53aa0e4743e4da55a5/e/65f1a2b37f3280c6241ca61a -->
+<robot name="my-robot">
+  <mujoco>
+    <compiler meshdir="assets"/>
+  </mujoco>
+
+  <!-- Link part_1 -->
+  <link name="part_1">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-09"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+    <!-- Part part_1 -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets/part_1.stl"/>
+      </geometry>
+      <material name="part_1_material">
+        <color rgba="0.615686 0.811765 0.929412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets/part_1.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Link part_2 -->
+  <link name="part_2">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-09"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://assets/part_2.stl"/>
+      </geometry>
+      <material name="part_2_material">
+        <color rgba="0.929412 0.709804 0.384314 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://assets/part_2.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Link part_3 -->
+  <link name="part_3">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-09"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://assets/part_3.stl"/>
+      </geometry>
+      <material name="part_3_material">
+        <color rgba="0.494118 0.752941 0.482353 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://assets/part_3.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Link part_4 -->
+  <link name="part_4">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-09"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://assets/part_4.stl"/>
+      </geometry>
+      <material name="part_4_material">
+        <color rgba="0.858824 0.47451 0.443137 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://assets/part_4.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Link part_5 -->
+  <link name="part_5">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-09"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://assets/part_5.stl"/>
+      </geometry>
+      <material name="part_5_material">
+        <color rgba="0.678431 0.560784 0.835294 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://assets/part_5.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="part_1_to_part_2" type="fixed">
+    <parent link="part_1"/>
+    <child link="part_2"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <joint name="part_1_to_part_3" type="fixed">
+    <parent link="part_1"/>
+    <child link="part_3"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <joint name="part_1_to_part_4" type="fixed">
+    <parent link="part_1"/>
+    <child link="part_4"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <joint name="part_1_to_part_5" type="fixed">
+    <parent link="part_1"/>
+    <child link="part_5"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+</robot>
