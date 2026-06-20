@@ -1,0 +1,12 @@
+<mujoco model="world">
+    <asset>
+        <model name="table_model" file="table.xml"/>
+    </asset>
+    <worldbody>
+        <light name="top" pos="0 0 5"/>
+        <geom type="plane" size="5 5 .1" pos="0 0 0"/>
+        <body name="table" pos="0 0 0.051">
+            <attach model="table_model" prefix="table_import"/>
+        </body>
+    </worldbody>
+</mujoco>
