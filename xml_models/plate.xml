@@ -1,0 +1,7 @@
+<mujoco model = "plate">
+    <worldbody>
+        <body name ="food_plate">
+            <geom type="cylinder" size="0.05 0.005" rgba="100 100 100 0.6"/>
+        </body>
+    </worldbody>
+</mujoco>
