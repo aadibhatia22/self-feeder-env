@@ -13,6 +13,14 @@
         <mesh name = "plate_visual" file="plate/PLATE.stl"/>
         <mesh name = "plate_collision" file="plate/MUJOCO_PLATE.stl"/>
 
+        <texture name="apriltag_36h11_0"
+            type="2d"
+            file="april_tag/tag36h11-0.png"/>
+        <material name="apriltag_36h11_0_material"
+            texture="apriltag_36h11_0"
+            texrepeat="1 1"
+            reflectance="0"/>
+
     </asset>
    
    
@@ -24,6 +32,16 @@
         </body>
         <body name="base_camera_stand_instance" pos="0 0 0.125">
             <attach model="base_camera_stand" prefix="1"/>
+        </body>
+        <body name ="apriltag_3611_0" pos="-0.165 -0.1 0.1655">
+             <!-- 60 mm AprilTag, visual-only, placed just above the plate -->
+            <geom name="apriltag_36h11_0"
+                type="plane"
+                pos="0 0 0"
+                size="0.03 0.03 0.001"
+                material="apriltag_36h11_0_material"
+                contype="0"
+                conaffinity="0"/>
         </body>
         <body name="plate" pos="0 0 0.15">
             <!-- Visible mesh only -->

@@ -1,5 +1,5 @@
 import mujoco
-import imageio
+from PIL import Image
 from pathlib import Path
 
 world_xml = Path(__file__).resolve().parent / "xml_models" / "world.xml"
@@ -32,6 +32,6 @@ renderer.update_scene(
 )
 
 image = renderer.render()
-imageio.imwrite("camera_view.png", image)
+Image.fromarray(image).save(Path(__file__).resolve().parent / "camera_view.png")
 
 renderer.close()

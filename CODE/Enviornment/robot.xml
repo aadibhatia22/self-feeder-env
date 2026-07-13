@@ -2,9 +2,9 @@
   <compiler angle="radian"/>
 
   <asset>
-    <mesh name="base" content_type="model/stl" file="assets/base.stl"/>
-    <mesh name="base_plate" content_type="model/stl" file="assets/base_plate.stl"/>
-    <mesh name="camera_stand" content_type="model/stl" file="assets/camera_stand.stl"/>
+    <mesh name="base" file="assets/base.stl"/>
+    <mesh name="base_plate" file="assets/base_plate.stl"/>
+    <mesh name="camera_stand" file="assets/camera_stand.stl"/>
   </asset>
 
   <worldbody>
