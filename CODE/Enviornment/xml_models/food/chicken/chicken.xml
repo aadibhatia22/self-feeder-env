@@ -1,0 +1,12 @@
+<mujoco model="chicken">
+  <worldbody>
+    <!-- A boneless chicken breast plus a small wing piece. -->
+    <body name="chicken_breast" pos="0 0 0.028">
+      <geom name="chicken_breast" type="ellipsoid" size="0.052 0.034 0.028" rgba="0.86 0.61 0.38 1"/>
+      <geom name="chicken_seared_top" type="ellipsoid" pos="0 0 0.020" size="0.040 0.026 0.006" rgba="0.68 0.34 0.12 1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="chicken_wing" pos="0.095 0 0.018" quat="0.966 0 0.259 0">
+      <geom name="chicken_wing" type="capsule" fromto="-0.025 0 0 0.025 0 0" size="0.014" rgba="0.82 0.54 0.31 1"/>
+    </body>
+  </worldbody>
+</mujoco>

@@ -1,0 +1,13 @@
+<mujoco model="fruit_slices">
+  <worldbody>
+    <!-- Two small, camera-friendly fruit slices. Dimensions are in metres. -->
+    <body name="apple_slice" pos="0 0 0">
+      <geom name="apple_slice" type="cylinder" size="0.032 0.006" rgba="0.86 0.12 0.06 1"/>
+      <geom name="apple_flesh" type="cylinder" pos="0 0 0.0062" size="0.025 0.001" rgba="1 0.72 0.42 1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="orange_slice" pos="0.075 0 0.002">
+      <geom name="orange_slice" type="cylinder" size="0.032 0.006" rgba="0.96 0.38 0.04 1"/>
+      <geom name="orange_flesh" type="cylinder" pos="0 0 0.0062" size="0.025 0.001" rgba="1 0.78 0.18 1" contype="0" conaffinity="0"/>
+    </body>
+  </worldbody>
+</mujoco>

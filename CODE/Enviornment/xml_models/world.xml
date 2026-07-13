@@ -9,6 +9,10 @@
     <asset>
         <model name="base_camera_stand" file="base-camera-stand/robot.xml"/>
         <model name="table" file="table/table.xml"/>
+        <model name="fruit_slices" file="food/fruit_slices/fruit_slices.xml"/>
+        <model name="tofu_blocks" file="food/tofu/tofu.xml"/>
+        <model name="vegetables" file="food/vegetables/vegetables.xml"/>
+        <model name="chicken" file="food/chicken/chicken.xml"/>
 
         <mesh name = "plate_visual" file="plate/PLATE.stl"/>
         <mesh name = "plate_collision" file="plate/MUJOCO_PLATE.stl"/>
@@ -57,6 +61,20 @@
                 contype="1"
                 conaffinity="1"
                 rgba="0 0 0 0"/>
+        </body>
+
+        <!-- Sample food placement for scene testing. -->
+        <body name="fruit_slices_instance" pos="-0.12 -0.07 0.18">
+            <attach model="fruit_slices" prefix="fruit_"/>
+        </body>
+        <body name="tofu_instance" pos="0.02 -0.07 0.18">
+            <attach model="tofu_blocks" prefix="tofu_"/>
+        </body>
+        <body name="vegetables_instance" pos="-0.10 0.07 0.18">
+            <attach model="vegetables" prefix="vegetable_"/>
+        </body>
+        <body name="chicken_instance" pos="0.10 0.06 0.18">
+            <attach model="chicken" prefix="chicken_"/>
         </body>
 
         <!--CALCULATE THE CAMERA POSITION EXACTLY-->

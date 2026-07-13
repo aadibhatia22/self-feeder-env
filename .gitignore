@@ -4,6 +4,8 @@
 !/.gitignore
 !/CODE/
 !/CODE/**
+!/food/
+!/food/**
 
 # Never track Finder metadata, including within source folders.
 **/.DS_Store
