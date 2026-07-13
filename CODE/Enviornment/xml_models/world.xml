@@ -5,16 +5,36 @@
     <asset>
         <model name="base_camera_stand" file="base-camera-stand/base-camera-stand.xml"/>
         <model name="table" file="table/table.xml"/>
+
+        <mesh name = "plate_visual" file="plate/PLATE.stl"/>
+        <mesh name = "plate_collision" file="plate/MUJOCO_PLATE.stl"/>
+
     </asset>
    
    
     <worldbody>
+        <light diffuse="1 1 1" pos="0 0 2" dir="0 0 -1"/>
         <geom type="plane" size="10 10 0.1" pos="0 0 0"/>
         <body name="table" pos="0 0 0.051">
             <attach model="table" prefix="1"/>
         </body>
-        <body name="base_camera_stand_instance" pos="0 0 0.15">
+        <body name="base_camera_stand_instance" pos="0 0.015 0.15">
             <attach model="base_camera_stand" prefix="1"/>
+        </body>
+        <body name="plate" pos="0 0 0.15">
+            <!-- Visible mesh only -->
+            <geom type="mesh"
+                mesh="plate_visual"
+                contype="0"
+                conaffinity="0"
+                />
+
+            <!-- Collision mesh only -->
+            <geom type="mesh"
+                mesh="plate_collision"
+                contype="1"
+                conaffinity="1"
+                rgba="0 0 0 0"/>
         </body>
     </worldbody>
 </mujoco>
