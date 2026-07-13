@@ -11,7 +11,7 @@
     </inertial>
     <!-- Part base -->
     <visual>
-      <origin xyz="-0.0121341 -0.0153152 -0.0380122" rpy="1.2557e-08 1.1562e-08 1.26e-10"/>
+      <origin xyz="-0.015 0 0" rpy="-0 0 -0"/>
       <geometry>
         <mesh filename="assets/base.stl"/>
       </geometry>
@@ -20,7 +20,7 @@
       </material>
     </visual>
     <collision>
-      <origin xyz="-0.0121341 -0.0153152 -0.0380122" rpy="1.2557e-08 1.1562e-08 1.26e-10"/>
+      <origin xyz="-0.015 0 0" rpy="-0 0 -0"/>
       <geometry>
         <mesh filename="assets/base.stl"/>
       </geometry>
@@ -35,7 +35,7 @@
     </inertial>
     <!-- Part base_plate -->
     <visual>
-      <origin xyz="-0.015 -0 -0.02" rpy="0 0 0"/>
+      <origin xyz="-0.015 -0 -0.02" rpy="-0 0 -0"/>
       <geometry>
         <mesh filename="assets/base_plate.stl"/>
       </geometry>
@@ -44,7 +44,7 @@
       </material>
     </visual>
     <collision>
-      <origin xyz="-0.015 -0 -0.02" rpy="0 0 0"/>
+      <origin xyz="-0.015 -0 -0.02" rpy="-0 0 -0"/>
       <geometry>
         <mesh filename="assets/base_plate.stl"/>
       </geometry>
@@ -52,7 +52,7 @@
   </link>
   <!-- Joint from base to base_plate -->
   <joint name="base-and-bottom-plate" type="fixed">
-    <origin xyz="0.00286592 -0.0153152 -0.0180122" rpy="1.2557e-08 1.1562e-08 1.26e-10"/>
+    <origin xyz="0 0 0.02" rpy="-0 0 -0"/>
     <parent link="base"/>
     <child link="base_plate"/>
     <axis xyz="0 0 1"/>
@@ -84,7 +84,7 @@
   </link>
   <!-- Joint from base to camera_stand -->
   <joint name="base-and-camera-stand" type="fixed">
-    <origin xyz="0.165366 0.00468478 0.0169878" rpy="1.5708 1.1562e-08 1.26e-10"/>
+    <origin xyz="0.1625 0.02 0.055" rpy="1.5708 0 -0"/>
     <parent link="base"/>
     <child link="camera_stand"/>
     <axis xyz="0 0 1"/>

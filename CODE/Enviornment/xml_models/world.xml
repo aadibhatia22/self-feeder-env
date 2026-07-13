@@ -7,7 +7,7 @@
   
     <!-- Loading the base camera stand model -->
     <asset>
-        <model name="base_camera_stand" file="base-camera-stand/base-camera-stand.xml"/>
+        <model name="base_camera_stand" file="base-camera-stand/robot.xml"/>
         <model name="table" file="table/table.xml"/>
 
         <mesh name = "plate_visual" file="plate/PLATE.stl"/>
@@ -22,7 +22,7 @@
         <body name="table" pos="0 0 0.051">
             <attach model="table" prefix="1"/>
         </body>
-        <body name="base_camera_stand_instance" pos="0 0.015 0.15">
+        <body name="base_camera_stand_instance" pos="0 0 0.125">
             <attach model="base_camera_stand" prefix="1"/>
         </body>
         <body name="plate" pos="0 0 0.15">
@@ -40,8 +40,10 @@
                 conaffinity="1"
                 rgba="0 0 0 0"/>
         </body>
+
+        <!--CALCULATE THE CAMERA POSITION EXACTLY-->
         <camera name="emeet_c960_camera"
-                pos="0 0 0.40"
+                pos="0 0 0.50"
                 euler="0 0 0"
                 projection="perspective"
                 fovy="52.23"

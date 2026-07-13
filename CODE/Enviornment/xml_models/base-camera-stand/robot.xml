@@ -1,0 +1,15 @@
+<mujoco model="base-camera-stand">
+  <compiler angle="radian"/>
+
+  <asset>
+    <mesh name="base" content_type="model/stl" file="assets/base.stl"/>
+    <mesh name="base_plate" content_type="model/stl" file="assets/base_plate.stl"/>
+    <mesh name="camera_stand" content_type="model/stl" file="assets/camera_stand.stl"/>
+  </asset>
+
+  <worldbody>
+    <geom pos="-0.015 0 0" quat="1 0 0 0" type="mesh" rgba="0.8 0.776471 0.713725 1" mesh="base"/>
+    <geom pos="-0.015 0 0" quat="1 0 0 0" type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="base_plate"/>
+    <geom pos="0.1775 0.0300001 0.04" quat="1 0 0 0" type="mesh" rgba="0.301961 0.301961 0.301961 1" mesh="camera_stand"/>
+  </worldbody>
+</mujoco>
