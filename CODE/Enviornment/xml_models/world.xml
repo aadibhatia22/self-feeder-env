@@ -1,5 +1,9 @@
 <mujoco model="world">
     <option gravity = "0 0 9.80665" />
+
+    <visual>
+        <global offwidth="1920" offheight="1080" />
+    </visual>
   
     <!-- Loading the base camera stand model -->
     <asset>
@@ -36,5 +40,12 @@
                 conaffinity="1"
                 rgba="0 0 0 0"/>
         </body>
+        <camera name="emeet_c960_camera"
+                pos="0 0 0.40"
+                euler="0 0 0"
+                projection="perspective"
+                fovy="52.23"
+                resolution="1920 1080"/>
+
     </worldbody>
 </mujoco>
