@@ -1,0 +1,12 @@
+# This repository stores source and simulation assets only.
+# Keep project notes, reference papers, and local files outside Git.
+/*
+!/.gitignore
+!/CODE/
+!/CODE/**
+
+# Never track Finder metadata, including within source folders.
+**/.DS_Store
+
+# Python virtual environments.
+**/.venv/

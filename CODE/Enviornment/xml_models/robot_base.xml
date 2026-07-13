@@ -1,0 +1,28 @@
+<mujoco model="robot_base">
+  <compiler angle="radian" meshdir="vision_training_models/assets"/>
+
+  <option gravity="0 0 0"/>
+
+  <asset>
+    <!-- Robot meshes from my-robot/my_robot.xml -->
+    <mesh name="part_1" content_type="model/stl" file="part_2.stl"/>
+    
+  </asset>
+
+  <worldbody>
+    <!-- Ground and lighting from world.xml -->
+    <geom name="ground" type="plane" size="10 10 0.1" pos="0 0 0"/>
+    <light name="light" pos="0 0 5" dir="0 0 -1"
+           diffuse="1 1 1" specular="0.1 0.1 0.1"/>
+
+    <geom name="part_1_geom" type="mesh" mesh="part_1" pos="0 0 0.1"/>
+           
+  </worldbody>
+
+  <!-- <actuator>
+    <motor name="second_motor" joint="second"
+           ctrlrange="-0.002 0.002" ctrllimited="true" gear="0.5"/>
+    <motor name="third_motor" joint="third"
+           ctrlrange="-0.002 0.002" ctrllimited="true" gear="0.5"/>
+  </actuator> -->
+</mujoco>

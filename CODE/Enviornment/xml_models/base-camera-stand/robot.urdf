@@ -1,0 +1,93 @@
+<?xml version="1.0" ?>
+<!-- Generated using onshape-to-robot -->
+<!-- Onshape https://cad.onshape.com/documents/d2a23bae68f35bdc0ae84dd2/w/80da26b3feeb954c36e05d0c/e/a40091738c79eff2b3f6b474 -->
+<robot name="base-camera-stand">
+  <!-- Link base -->
+  <link name="base">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-09"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+    <!-- Part base -->
+    <visual>
+      <origin xyz="-0.0121341 -0.0153152 -0.0380122" rpy="1.2557e-08 1.1562e-08 1.26e-10"/>
+      <geometry>
+        <mesh filename="assets/base.stl"/>
+      </geometry>
+      <material name="base_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.0121341 -0.0153152 -0.0380122" rpy="1.2557e-08 1.1562e-08 1.26e-10"/>
+      <geometry>
+        <mesh filename="assets/base.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Link base_plate -->
+  <link name="base_plate">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-09"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+    <!-- Part base_plate -->
+    <visual>
+      <origin xyz="-0.015 -0 -0.02" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="assets/base_plate.stl"/>
+      </geometry>
+      <material name="base_plate_material">
+        <color rgba="0.647059 0.647059 0.647059 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.015 -0 -0.02" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="assets/base_plate.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Joint from base to base_plate -->
+  <joint name="base-and-bottom-plate" type="fixed">
+    <origin xyz="0.00286592 -0.0153152 -0.0180122" rpy="1.2557e-08 1.1562e-08 1.26e-10"/>
+    <parent link="base"/>
+    <child link="base_plate"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10" velocity="10"/>
+  </joint>
+  <!-- Link camera_stand -->
+  <link name="camera_stand">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-09"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+    <!-- Part camera_stand -->
+    <visual>
+      <origin xyz="0.015 -0.015 -0.01" rpy="-1.5708 -0 -0"/>
+      <geometry>
+        <mesh filename="assets/camera_stand.stl"/>
+      </geometry>
+      <material name="camera_stand_material">
+        <color rgba="0.301961 0.301961 0.301961 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.015 -0.015 -0.01" rpy="-1.5708 -0 -0"/>
+      <geometry>
+        <mesh filename="assets/camera_stand.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Joint from base to camera_stand -->
+  <joint name="base-and-camera-stand" type="fixed">
+    <origin xyz="0.165366 0.00468478 0.0169878" rpy="1.5708 1.1562e-08 1.26e-10"/>
+    <parent link="base"/>
+    <child link="camera_stand"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10" velocity="10"/>
+  </joint>
+</robot>

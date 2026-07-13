@@ -1,0 +1,4 @@
+mujoco==3.9.0
+numpy==2.4.6
+mediapy==1.2.4
+onshape-to-robot==1.8.2
