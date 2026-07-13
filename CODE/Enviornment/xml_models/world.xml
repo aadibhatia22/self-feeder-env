@@ -1,12 +1,20 @@
 <mujoco model="world">
-    <option gravity = "0 0 0" />
+    <option gravity = "0 0 9.80665" />
+  
+    <!-- Loading the base camera stand model -->
     <asset>
-        <!-- <model name="table_model" file="table.xml"/>
-        <model name="my_robot" file="my-robot/my_robot.xml"/>
-        <model name="plate_model" file="plate.xml"/> -->
+        <model name="base_camera_stand" file="base-camera-stand/base-camera-stand.xml"/>
+        <model name="table" file="table/table.xml"/>
     </asset>
+   
+   
     <worldbody>
-    <geom type="plane" size="10 10 0.1" pos="0 0 0"/>
-    <light name="light" pos="0 0 5" dir="0 0 -1" diffuse="1 1 1" specular="0.1 0.1 0.1"/>   
+        <geom type="plane" size="10 10 0.1" pos="0 0 0"/>
+        <body name="table" pos="0 0 0.051">
+            <attach model="table" prefix="1"/>
+        </body>
+        <body name="base_camera_stand_instance" pos="0 0 0.15">
+            <attach model="base_camera_stand" prefix="1"/>
+        </body>
     </worldbody>
 </mujoco>
