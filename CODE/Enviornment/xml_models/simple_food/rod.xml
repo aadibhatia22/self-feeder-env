@@ -1,0 +1,8 @@
+<mujoco model="rod">
+  <worldbody>
+    <!-- A simple block for demonstration purposes. -->
+    <body name="rod" pos="0 0 0">
+      <geom name="rod" type="capsule" size="0.005 0.016" euler="0 90 0" rgba="0.92 0.84 0.58 1"/>
+    </body>
+  </worldbody>
+</mujoco>

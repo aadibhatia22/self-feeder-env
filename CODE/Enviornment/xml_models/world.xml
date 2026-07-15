@@ -1,5 +1,5 @@
 <mujoco model="world">
-    <option gravity = "0 0 9.80665" />
+    <option gravity = "0 0 -9.80665" />
 
     <visual>
         <global offwidth="1920" offheight="1080" />
@@ -38,6 +38,7 @@
             <attach model="base_camera_stand" prefix="1"/>
         </body>
         <body name ="apriltag_3611_0" pos="-0.165 -0.1 0.1655">
+            <site name="apriltag_36h11_0_site" pos="0 0 0" size="0.001 0.001 0.001" type="box" rgba="1 1 1 0.5"/> 
              <!-- 60 mm AprilTag, visual-only, placed just above the plate -->
             <geom name="apriltag_36h11_0"
                 type="plane"

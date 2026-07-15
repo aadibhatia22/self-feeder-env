@@ -1,0 +1,8 @@
+<mujoco model="deformed_slice">
+  <worldbody>
+    <!-- A simple slice for demonstration purposes. -->
+    <body name="slice" pos="0 0 0">
+      <geom name="slice" type="ellipsoid" size="0.032 0.040 0.005" rgba="0.92 0.84 0.58 1"/>
+    </body>
+  </worldbody>
+</mujoco>

@@ -4,6 +4,7 @@
     <body name="carrot" pos="0 0 0">
       <geom name="carrot_root" type="ellipsoid" size="0.026 0.026 0.065" rgba="0.95 0.30 0.03 1"/>
       <geom name="carrot_tip" type="sphere" pos="0 0 -0.058" size="0.009" rgba="0.95 0.30 0.03 1" contype="0" conaffinity="0"/>
+      <!-- 2 cm diameter flat top; comfortably exceeds the 1.5 cm target. -->
       <geom name="carrot_stem" type="cylinder" pos="0 0 0.071" size="0.010 0.012" rgba="0.16 0.55 0.10 1"/>
     </body>
 
@@ -13,12 +14,19 @@
       <geom name="broccoli_floret_left" type="sphere" pos="-0.018 0 0.062" size="0.022" rgba="0.08 0.38 0.08 1"/>
       <geom name="broccoli_floret_center" type="sphere" pos="0.012 0.004 0.070" size="0.025" rgba="0.10 0.46 0.10 1"/>
       <geom name="broccoli_floret_right" type="sphere" pos="0.030 -0.002 0.057" size="0.019" rgba="0.07 0.33 0.07 1"/>
+      <!-- Flat top provides a 1.5 cm diameter upward-facing surface. -->
+      <geom name="broccoli_grasp_surface" type="cylinder" pos="0.012 0.004 0.095" size="0.0075 0.001" rgba="0.10 0.46 0.10 1"/>
     </body>
 
     <!-- Cucumber slice. -->
     <body name="cucumber_slice" pos="0.16 0 0.018">
       <geom name="cucumber_rind" type="cylinder" size="0.030 0.008" rgba="0.18 0.58 0.16 1"/>
       <geom name="cucumber_flesh" type="cylinder" pos="0 0 0.0082" size="0.023 0.001" rgba="0.62 0.86 0.35 1" contype="0" conaffinity="0"/>
+    </body>
+
+
+    <body>
+      <geom type="ellipsoid" size="0.03 0.1 0.05" pos="0 0 1" rgba="0.95 0.30 0.03 1"/>
     </body>
   </worldbody>
 </mujoco>
