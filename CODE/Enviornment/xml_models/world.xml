@@ -7,12 +7,20 @@
   
     <!-- Loading the base camera stand model -->
     <asset>
+        <!-- ADVANCED FOOD IMPORT -->
         <model name="base_camera_stand" file="base-camera-stand/robot.xml"/>
         <model name="table" file="table/table.xml"/>
         <model name="fruit_slices" file="food/fruit_slices/fruit_slices.xml"/>
         <model name="tofu_blocks" file="food/tofu/tofu.xml"/>
         <model name="vegetables" file="food/vegetables/vegetables.xml"/>
         <model name="chicken" file="food/chicken/chicken.xml"/>
+
+
+        <!-- SIMPLE FOOD IMPORT -->
+        <model name="full_slice" file="simple_food/full_slice.xml"/>
+        <model name="deformed_slice" file="simple_food/deformed_slice.xml"/>
+        <model name="rod" file="simple_food/rod.xml"/>
+        <model name="block" file="simple_food/block.xml"/>
 
         <mesh name = "plate_visual" file="plate/PLATE.stl"/>
         <mesh name = "plate_collision" file="plate/MUJOCO_PLATE.stl"/>
@@ -29,8 +37,8 @@
    
    
     <worldbody>
-        <light diffuse="1 1 1" pos="0 0 2" dir="0 0 -1"/>
-        <geom type="plane" size="10 10 0.1" pos="0 0 0"/>
+        <light diffuse="0.5 0.5 0.5" pos="0 0 10" dir="0 0 -1"/>
+        <geom name="ground_plane" type="plane" size="10 10 0.1" pos="0 0 0"/>
         <body name="table" pos="0 0 0.051">
             <attach model="table" prefix="1"/>
         </body>
@@ -38,7 +46,7 @@
             <attach model="base_camera_stand" prefix="1"/>
         </body>
         <body name ="apriltag_3611_0" pos="-0.165 -0.1 0.1655">
-            <site name="apriltag_36h11_0_site" pos="0 0 0" size="0.001 0.001 0.001" type="box" rgba="1 1 1 0.5"/> 
+            <site name="apriltag_36h11_0_site" pos="0 0 0" size="0.001 0.001 0.001" type="box" rgba="1 0 0 0"/> 
              <!-- 60 mm AprilTag, visual-only, placed just above the plate -->
             <geom name="apriltag_36h11_0"
                 type="plane"
@@ -50,22 +58,24 @@
         </body>
         <body name="plate" pos="0 0 0.15">
             <!-- Visible mesh only -->
-            <geom type="mesh"
+            <geom name="plate_visual_geom" type="mesh"
                 mesh="plate_visual"
                 contype="0"
                 conaffinity="0"
                 />
 
             <!-- Collision mesh only -->
-            <geom type="mesh"
+            <geom name="plate_collision_geom" type="mesh"
                 mesh="plate_collision"
                 contype="1"
                 conaffinity="1"
                 rgba="0 0 0 0"/>
+
+             <site name = "testing_site" pos="0 0 0.2" size="0.001 0.001 0.001" type="box" rgba="1 0 1 1"/> 
         </body>
 
-        <!-- Sample food placement for scene testing. -->
-        <body name="fruit_slices_instance" pos="-0.12 -0.07 0.18">
+        <!-- Sample advanced food placement for scene testing. -->
+        <!-- <body name="fruit_slices_instance" pos="-0.12 -0.07 0.18">
             <attach model="fruit_slices" prefix="fruit_"/>
         </body>
         <body name="tofu_instance" pos="0.02 -0.07 0.18">
@@ -76,7 +86,33 @@
         </body>
         <body name="chicken_instance" pos="0.10 0.06 0.18">
             <attach model="chicken" prefix="chicken_"/>
+        </body> -->
+    
+        <body name="full_slice_instance" pos="-0.12 -0.07 0.18">
+            <attach model="full_slice" prefix="full_slice_"/>
         </body>
+        <body name="deformed_slice_instance" pos="0.02 -0.07 0.18">
+            <attach model="deformed_slice" prefix="deformed_slice_"/>
+        </body>
+        <body name="rod_instance" pos="-0.10 0.07 0.18">
+            <attach model="rod" prefix="rod_"/>
+        </body>
+        <body name="block_instance" pos="0.10 0.06 0.18">
+            <attach model="block" prefix="block_"/>
+        </body>
+        <body name="full_slice_instance_2" pos="-0.12 -0.07 -0.18">
+            <attach model="full_slice" prefix="full_slice_2"/>
+        </body>
+        <body name="deformed_slice_instance_2" pos="0.02 -0.07 -0.18">
+            <attach model="deformed_slice" prefix="deformed_slice_2"/>
+        </body>
+        <body name="rod_instance_2" pos="-0.10 0.07 -0.18">
+            <attach model="rod" prefix="rod_2"/>
+        </body>
+        <body name="block_instance_2" pos="0.10 0.06 -0.18">
+            <attach model="block" prefix="block_2"/>
+        </body>
+
 
         <!--CALCULATE THE CAMERA POSITION EXACTLY-->
         <camera name="emeet_c960_camera"

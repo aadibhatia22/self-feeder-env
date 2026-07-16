@@ -8,8 +8,8 @@
   </asset>
 
   <worldbody>
-    <geom pos="-0.015 0 0" quat="1 0 0 0" type="mesh" rgba="0.8 0.776471 0.713725 1" mesh="base"/>
-    <geom pos="-0.015 0 0" quat="1 0 0 0" type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="base_plate"/>
-    <geom pos="0.1775 0.0300001 0.04" quat="1 0 0 0" type="mesh" rgba="0.301961 0.301961 0.301961 1" mesh="camera_stand"/>
+    <geom name="base_geom" pos="-0.015 0 0" quat="1 0 0 0" type="mesh" rgba="0.8 0.776471 0.713725 1" mesh="base"/>
+    <geom name="base_plate_geom" pos="-0.015 0 0" quat="1 0 0 0" type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="base_plate"/>
+    <geom name="camera_stand_geom" pos="0.1775 0.0300001 0.04" quat="1 0 0 0" type="mesh" rgba="0.301961 0.301961 0.301961 1" mesh="camera_stand"/>
   </worldbody>
 </mujoco>

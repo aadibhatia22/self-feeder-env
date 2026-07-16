@@ -3,25 +3,25 @@
         <body name="table" pos="0 0 0">
             <!-- Legs -->
             <body name="bottom left" pos="-0.375 -0.225 0">
-                <geom type="box" size="0.025 0.025 0.05" rgba="0.8 0.6 0.4 1"/>
+                <geom type="box" name ="bottom_l" size="0.025 0.025 0.05" rgba="0.8 0.6 0.4 1"/>
             </body>
 
             <body name="top left" pos="-0.375 0.225 0">
-                <geom type="box" size="0.025 0.025 0.05" rgba="0.8 0.6 0.4 1"/>
+                <geom type="box" name="top_l" size="0.025 0.025 0.05" rgba="0.8 0.6 0.4 1"/>
             </body>
 
             <body name="bottom right" pos="0.375 -0.225 0">
-                <geom type="box" size="0.025 0.025 0.05" rgba="0.8 0.6 0.4 1"/>
+                <geom type="box" name="bottom_r" size="0.025 0.025 0.05" rgba="0.8 0.6 0.4 1"/>
             </body>
 
             <body name="top right" pos="0.375 0.225 0">
-                <geom type="box" size="0.025 0.025 0.05" rgba="0.8 0.6 0.4 1"/>
+                <geom type="box" name="top_r" size="0.025 0.025 0.05" rgba="0.8 0.6 0.4 1"/>
             </body>
 
             <!-- flat top -->
 
             <body name="table top" pos="0 0 0.06">
-                <geom type="box" size = "0.4 0.25 0.0125" rgba="0.8 0.6 0.4 1"/>
+                <geom type="box" name="table_top_geom" size = "0.4 0.25 0.0125" rgba="0.8 0.6 0.4 1"/>
             </body>
 
         </body>
