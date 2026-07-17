@@ -1,3 +1,5 @@
+from xml.parsers.expat import model
+
 import mujoco
 import numpy as np
 
@@ -17,7 +19,16 @@ class Enviornment_Randomizer:
             first_geom_name = self.get_first_geom_in_body(model, body_name)
             model = self.randomize_color_of_single_geom(model, first_geom_name)
         return model
-
+    def randomize_color_of_multiple_geoms(self, model, list_of_geom_names):
+        for geom_name in list_of_geom_names:
+            model = self.randomize_color_of_single_geom(model, geom_name)
+        return model
+    def randomize_color_of_multiple_bodies_with_multiple_geom(self, model, list_of_body_names):
+        for body_name in list_of_body_names:
+           for geom_id in self.get_geom_ids_in_body(model, body_name):
+                geom_name = model.geom(geom_id).name
+                model = self.randomize_color_of_single_geom(model, geom_name)
+        return model
     """ NUMBER OF OBJECTS RANDOMIZATION"""
     def randomize_number_of_objects(
         self,
@@ -269,5 +280,7 @@ class Enviornment_Randomizer:
         # first element
         first_geom_id = self.get_geom_ids_in_body(model, body_name)[0]
         return model.geom(first_geom_id).name
-    
-
+    def reset(self, model, data):
+        mujoco.mj_resetData(model, data)
+        mujoco.mj_forward(model, data)
+        return model, data
