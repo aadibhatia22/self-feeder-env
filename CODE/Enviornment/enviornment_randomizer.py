@@ -178,14 +178,14 @@ class Enviornment_Randomizer:
         return model
 
     def randomize_camera_position(self, model, camera_name, max_offset_x, max_offset_y, max_offset_z):
-        camera_body_id = model.body(camera_name)
-        original_position = model.body_pos[camera_body_id].copy()
-        max_offsets = np.array([max_offset_x, max_offset_y, max_offset_z])
-        new_pos = np.array([0,0,0])
+        camera = model.camera(camera_name)
+        original_position = camera.pos.copy()
+        max_offsets = np.array([max_offset_x, max_offset_y, max_offset_z], dtype=float)
+        new_pos = np.array([0.0,0.0,0.0])
         for i in range(3):  # x, y, z
             random_offset = np.random.uniform(-max_offsets[i], max_offsets[i])
             new_pos[i] = original_position[i] + random_offset
-        model.body_pos[camera_body_id] = new_pos
+        camera.pos[:] = new_pos
         return model
 
     
