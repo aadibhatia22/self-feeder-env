@@ -29,6 +29,21 @@ class Enviornment_Randomizer:
                 geom_name = model.geom(geom_id).name
                 model = self.randomize_color_of_single_geom(model, geom_name)
         return model
+    #Not used
+    def randomize_plate_color(self, model, plate_geom_name):
+        # Sample one shade ranging from white to light yellow.
+        brightness = np.random.uniform(0.85, 1.0)
+        green_offset = np.random.uniform(0.0, 0.04)
+        blue_offset = np.random.uniform(green_offset, 0.30)
+        plate_color = np.array([
+            brightness,
+            brightness - green_offset,
+            brightness - blue_offset,
+        ])
+
+        model.geom(plate_geom_name).rgba[:3] = plate_color
+
+        return model
     """ NUMBER OF OBJECTS RANDOMIZATION"""
     def randomize_number_of_objects(
         self,
@@ -162,7 +177,16 @@ class Enviornment_Randomizer:
 
         return model
 
-    
+    def randomize_camera_position(self, model, camera_name, max_offset_x, max_offset_y, max_offset_z):
+        camera_body_id = model.body(camera_name)
+        original_position = model.body_pos[camera_body_id].copy()
+        max_offsets = np.array([max_offset_x, max_offset_y, max_offset_z])
+        new_pos = np.array([0,0,0])
+        for i in range(3):  # x, y, z
+            random_offset = np.random.uniform(-max_offsets[i], max_offsets[i])
+            new_pos[i] = original_position[i] + random_offset
+        model.body_pos[camera_body_id] = new_pos
+        return model
 
     
     
@@ -284,3 +308,53 @@ class Enviornment_Randomizer:
         mujoco.mj_resetData(model, data)
         mujoco.mj_forward(model, data)
         return model, data
+    def visibility_check(
+        self,
+        model,
+        list_of_body_names,
+        plate_geom,
+        minimum_color_distance=0.30,
+        max_attempts=100,
+    ):
+        if not 0 <= minimum_color_distance <= np.sqrt(3):
+            raise ValueError(
+                "minimum_color_distance must be between 0 and sqrt(3)"
+            )
+        if max_attempts < 1:
+            raise ValueError("max_attempts must be at least 1")
+
+        plate_color = model.geom(plate_geom).rgba[:3].copy()
+
+        for body_name in list_of_body_names:
+           for geom_id in self.get_geom_ids_in_body(model, body_name):
+                geom = model.geom(geom_id)
+                geom_name = geom.name
+
+                # Do not recolor the plate itself or invisible collision geoms.
+                if geom_name == plate_geom or geom.rgba[3] == 0:
+                    continue
+
+                attempts = 0
+                color_distance = np.linalg.norm(
+                    geom.rgba[:3] - plate_color
+                )
+
+                while (
+                    color_distance < minimum_color_distance
+                    and attempts < max_attempts
+                ):
+                    model = self.randomize_color_of_single_geom(
+                        model, geom_name
+                    )
+                    attempts += 1
+                    color_distance = np.linalg.norm(
+                        geom.rgba[:3] - plate_color
+                    )
+
+                if color_distance < minimum_color_distance:
+                    raise RuntimeError(
+                        f"Could not find a visible color for '{geom_name}' "
+                        f"after {max_attempts} attempts"
+                    )
+
+        return model
