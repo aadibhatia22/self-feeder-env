@@ -71,7 +71,7 @@
                 conaffinity="1"
                 rgba="0 0 0 0"/>
 
-             <site name = "testing_site" pos="0 0 0.2" size="0.001 0.001 0.001" type="box" rgba="1 0 1 1"/> 
+             <site name = "testing_site" pos="0 0 0.2" size="0.001 0.001 0.001" type="box" rgba="1 0 0 0"/> 
         </body>
 
         <!-- Sample advanced food placement for scene testing. -->

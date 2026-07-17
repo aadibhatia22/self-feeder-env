@@ -7,10 +7,18 @@ class Enviornment_Randomizer:
     def __init__(self):
         pass
 
-    def randomize_color(self, model, geom_name):
+    """ COLOR RANDOMIZATION"""
+
+    def randomize_color_of_single_geom(self, model, geom_name, isBody = False):
         model.geom(geom_name).rgba[:3] = np.random.rand(3)  # Random RGB values
         return model
+    def randomize_color_of_multiple_bodies_with_single_geom(self, model, list_of_body_names):
+        for body_name in list_of_body_names:
+            first_geom_name = self.get_first_geom_in_body(model, body_name)
+            model = self.randomize_color_of_single_geom(model, first_geom_name)
+        return model
 
+    """ NUMBER OF OBJECTS RANDOMIZATION"""
     def randomize_number_of_objects(
         self,
         list_of_food_object_names,
@@ -64,54 +72,7 @@ class Enviornment_Randomizer:
 
         return model
 
-    def get_body_geom_world_bounds(self, model, data, body_name):
-        """Return the world-space center and dimensions of a body's geoms."""
-        mujoco.mj_forward(model, data)
-
-        corner_signs = np.array([
-            [-1, -1, -1],
-            [-1, -1, 1],
-            [-1, 1, -1],
-            [-1, 1, 1],
-            [1, -1, -1],
-            [1, -1, 1],
-            [1, 1, -1],
-            [1, 1, 1],
-        ], dtype=float)
-        world_corners = []
-
-        # Find every geom inside the wrapper body or its child bodies.
-        for geom_id in self.get_geom_ids_in_body(model, body_name):
-            if model.geom_type[geom_id] == mujoco.mjtGeom.mjGEOM_PLANE:
-                raise ValueError(
-                    f"Body '{body_name}' contains an infinite plane geom"
-                )
-
-            # geom_aabb is [local center, local half dimensions].
-            local_center = model.geom_aabb[geom_id, :3]
-            local_half_dimensions = model.geom_aabb[geom_id, 3:]
-            local_corners = (
-                local_center
-                + corner_signs * local_half_dimensions
-            )
-
-            # Transform the local AABB corners into world coordinates.
-            geom_world_position = data.geom_xpos[geom_id]
-            geom_world_rotation = data.geom_xmat[geom_id].reshape(3, 3)
-            transformed_corners = (
-                local_corners @ geom_world_rotation.T
-                + geom_world_position
-            )
-            world_corners.append(transformed_corners)
-
-        world_corners = np.vstack(world_corners)
-        world_minimum = np.min(world_corners, axis=0)
-        world_maximum = np.max(world_corners, axis=0)
-        world_center = (world_minimum + world_maximum) / 2
-        world_dimensions = world_maximum - world_minimum
-
-        return world_center, world_dimensions
-
+    """ POSITION RANDOMIZATION"""
     def randomize_position_of_objects(
         self,
         list_of_food_object_names,
@@ -190,11 +151,82 @@ class Enviornment_Randomizer:
 
         return model
 
-    def get_first_geom_in_body(self, model, body_name):
-        # first element
-        first_geom_id = self.get_geom_ids_in_body(model, body_name)[0]
-        return model.geom(first_geom_id).name
+    
 
+    
+    
+    """HELPER METHODS"""
+    def get_body_geom_world_bounds(self, model, data, body_name):
+        """Return the world-space center and dimensions of a body's geoms."""
+        mujoco.mj_forward(model, data)
+
+        corner_signs = np.array([
+            [-1, -1, -1],
+            [-1, -1, 1],
+            [-1, 1, -1],
+            [-1, 1, 1],
+            [1, -1, -1],
+            [1, -1, 1],
+            [1, 1, -1],
+            [1, 1, 1],
+        ], dtype=float)
+        world_corners = []
+
+        # Find every geom inside the wrapper body or its child bodies.
+        for geom_id in self.get_geom_ids_in_body(model, body_name):
+            if model.geom_type[geom_id] == mujoco.mjtGeom.mjGEOM_PLANE:
+                raise ValueError(
+                    f"Body '{body_name}' contains an infinite plane geom"
+                )
+
+            # geom_aabb is [local center, local half dimensions].
+            local_center = model.geom_aabb[geom_id, :3]
+            local_half_dimensions = model.geom_aabb[geom_id, 3:]
+            local_corners = (
+                local_center
+                + corner_signs * local_half_dimensions
+            )
+
+            # Transform the local AABB corners into world coordinates.
+            geom_world_position = data.geom_xpos[geom_id]
+            geom_world_rotation = data.geom_xmat[geom_id].reshape(3, 3)
+            transformed_corners = (
+                local_corners @ geom_world_rotation.T
+                + geom_world_position
+            )
+            world_corners.append(transformed_corners)
+
+        world_corners = np.vstack(world_corners)
+        world_minimum = np.min(world_corners, axis=0)
+        world_maximum = np.max(world_corners, axis=0)
+        world_center = (world_minimum + world_maximum) / 2
+        world_dimensions = world_maximum - world_minimum
+
+        return world_center, world_dimensions
+    def get_geom_ids_in_body(self, model, body_name):
+        root_body_id = model.body(body_name).id
+        geom_ids = []
+
+        for geom_id in range(model.ngeom):
+            current_body_id = int(model.geom_bodyid[geom_id])
+
+            while (
+                current_body_id != root_body_id
+                and current_body_id != 0
+            ):
+                current_body_id = int(
+                    model.body_parentid[current_body_id]
+                )
+
+            if current_body_id == root_body_id:
+                geom_ids.append(geom_id)
+
+        if not geom_ids:
+            raise ValueError(
+                f"Body '{body_name}' has no descendant geoms"
+            )
+
+        return geom_ids
     def colision_check(
         self,
         model,
@@ -233,28 +265,9 @@ class Enviornment_Randomizer:
                     return True  # Overlap detected
 
         return False  # it passed all checks
+    def get_first_geom_in_body(self, model, body_name):
+        # first element
+        first_geom_id = self.get_geom_ids_in_body(model, body_name)[0]
+        return model.geom(first_geom_id).name
+    
 
-    def get_geom_ids_in_body(self, model, body_name):
-        root_body_id = model.body(body_name).id
-        geom_ids = []
-
-        for geom_id in range(model.ngeom):
-            current_body_id = int(model.geom_bodyid[geom_id])
-
-            while (
-                current_body_id != root_body_id
-                and current_body_id != 0
-            ):
-                current_body_id = int(
-                    model.body_parentid[current_body_id]
-                )
-
-            if current_body_id == root_body_id:
-                geom_ids.append(geom_id)
-
-        if not geom_ids:
-            raise ValueError(
-                f"Body '{body_name}' has no descendant geoms"
-            )
-
-        return geom_ids
