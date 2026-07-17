@@ -3,11 +3,12 @@ import numpy as np
 
 
 class Enviornment_Randomizer:
-    def __init__(self, seed=None):
-        self.rng = np.random.default_rng(seed)
+
+    def __init__(self):
+        pass
 
     def randomize_color(self, model, geom_name):
-        model.geom(geom_name).rgba[:3] = self.rng.random(3)
+        model.geom(geom_name).rgba[:3] = np.random.rand(3)  # Random RGB values
         return model
 
     def randomize_number_of_objects(
@@ -18,93 +19,83 @@ class Enviornment_Randomizer:
         in_secene_z_cord,
         out_of_scene_z_cord,
     ):
-        body_names = np.asarray(list_of_food_object_names, dtype=str)
-
-        if body_names.ndim != 1:
+        # Keep a local copy so the caller's original list is not changed.
+        list_of_food_object_names = np.asarray(
+            list_of_food_object_names
+        ).copy()
+        if list_of_food_object_names.ndim != 1:
             raise ValueError("list_of_food_object_names must be one-dimensional")
-        if not 0 <= min_objects <= body_names.size:
+        if not 0 <= min_objects <= list_of_food_object_names.size:
             raise ValueError(
-                f"min_objects must be between 0 and {body_names.size}"
+                "min_objects must be between 0 and the number of objects"
             )
 
-        number_to_show = min_objects
-        while (
-            number_to_show < body_names.size
-            and self.rng.random() >= 0.5
-        ):
-            number_to_show += 1
-
-        selected_names = set(
-            self.rng.choice(
-                body_names,
-                size=number_to_show,
-                replace=False,
-            ).tolist()
-        )
-
-        for body_name in body_names:
-            body_name = str(body_name)
-            if body_name in selected_names:
-                model.body(body_name).pos[2] = in_secene_z_cord
+        number_of_objects_initilized = 0
+        rng = np.random.default_rng()
+        while True:
+            random_number = rng.random()
+            if (
+                random_number < 0.5
+                and number_of_objects_initilized >= min_objects
+            ):
+                break
             else:
-                model.body(body_name).pos[2] = out_of_scene_z_cord
+                size = list_of_food_object_names.size
+                if size == 0:
+                    break
+
+                # already in index position
+                if size <= 1:
+                    object_index = 0
+                else:
+                    object_index = rng.integers(0, size)
+
+                name_of_object = str(
+                    list_of_food_object_names[object_index]
+                )
+                model.body(name_of_object).pos[2] = in_secene_z_cord
+                list_of_food_object_names = np.delete(
+                    list_of_food_object_names, object_index
+                )
+                number_of_objects_initilized += 1
+
+        for object_name in list_of_food_object_names:
+            model.body(str(object_name)).pos[2] = out_of_scene_z_cord
 
         return model
 
-    def get_geom_ids_in_body(self, model, body_name):
-        """Return IDs for all geoms in a wrapper body's subtree."""
-        root_body_id = model.body(body_name).id
-        geom_ids = []
-
-        for geom_id in range(model.ngeom):
-            current_body_id = int(model.geom_bodyid[geom_id])
-
-            while current_body_id != root_body_id and current_body_id != 0:
-                current_body_id = int(
-                    model.body_parentid[current_body_id]
-                )
-
-            if current_body_id == root_body_id:
-                geom_ids.append(geom_id)
-
-        if not geom_ids:
-            raise ValueError(
-                f"Body '{body_name}' has no descendant geoms"
-            )
-
-        return geom_ids
-
     def get_body_geom_world_bounds(self, model, data, body_name):
-        """Return world-space center and dimensions of all descendant geoms."""
+        """Return the world-space center and dimensions of a body's geoms."""
         mujoco.mj_forward(model, data)
 
-        corner_signs = np.array(
-            [
-                [-1, -1, -1],
-                [-1, -1, 1],
-                [-1, 1, -1],
-                [-1, 1, 1],
-                [1, -1, -1],
-                [1, -1, 1],
-                [1, 1, -1],
-                [1, 1, 1],
-            ],
-            dtype=float,
-        )
+        corner_signs = np.array([
+            [-1, -1, -1],
+            [-1, -1, 1],
+            [-1, 1, -1],
+            [-1, 1, 1],
+            [1, -1, -1],
+            [1, -1, 1],
+            [1, 1, -1],
+            [1, 1, 1],
+        ], dtype=float)
         world_corners = []
 
+        # Find every geom inside the wrapper body or its child bodies.
         for geom_id in self.get_geom_ids_in_body(model, body_name):
             if model.geom_type[geom_id] == mujoco.mjtGeom.mjGEOM_PLANE:
                 raise ValueError(
                     f"Body '{body_name}' contains an infinite plane geom"
                 )
 
+            # geom_aabb is [local center, local half dimensions].
             local_center = model.geom_aabb[geom_id, :3]
             local_half_dimensions = model.geom_aabb[geom_id, 3:]
             local_corners = (
-                local_center + corner_signs * local_half_dimensions
+                local_center
+                + corner_signs * local_half_dimensions
             )
 
+            # Transform the local AABB corners into world coordinates.
             geom_world_position = data.geom_xpos[geom_id]
             geom_world_rotation = data.geom_xmat[geom_id].reshape(3, 3)
             transformed_corners = (
@@ -121,44 +112,89 @@ class Enviornment_Randomizer:
 
         return world_center, world_dimensions
 
-    def collision_check(
+    def randomize_position_of_objects(
         self,
-        model,
-        data,
-        object_name,
         list_of_food_object_names,
+        model,
+        plate_radius=0.075,
+        plate_body_name="plate",
         clearance=0.005,
+        max_attempts=5000,
     ):
-        """Check one wrapper body against the other food-body subtrees."""
-        primary_geom_ids = self.get_geom_ids_in_body(
-            model, object_name
-        )
-        mujoco.mj_forward(model, data)
+        # pass in the body names
+        plate_center = model.body(plate_body_name).pos[:2]
+        plate_height = model.body(plate_body_name).pos[2]
+        data = mujoco.MjData(model)
+        placed_food_object_names = []
 
-        for other_body_name in list_of_food_object_names:
-            other_body_name = str(other_body_name)
-            if other_body_name == object_name:
+        for object_name in list_of_food_object_names:
+            object_name = str(object_name)
+            Passed = False
+            attempts = 0
+
+            # Skip food that randomize_number_of_objects moved out of scene.
+            object_center, object_dimensions = self.get_body_geom_world_bounds(
+                model, data, object_name
+            )
+            if object_center[2] < plate_height:
                 continue
 
-            other_geom_ids = self.get_geom_ids_in_body(
-                model, other_body_name
-            )
-            for primary_geom_id in primary_geom_ids:
-                for other_geom_id in other_geom_ids:
-                    distance = mujoco.mj_geomDistance(
-                        model,
-                        data,
-                        primary_geom_id,
-                        other_geom_id,
-                        max(1.0, clearance + 1.0),
-                        None,
-                    )
-                    if distance <= clearance:
-                        return True
+            obj_x_size = object_dimensions[0]
+            obj_y_size = object_dimensions[1]
 
-        return False
+            # maximum allowable offsets to keep the object within the plate
+            max_x_offset = plate_radius - obj_x_size / 2
+            max_y_offset = plate_radius - obj_y_size / 2
+            if max_x_offset < 0 or max_y_offset < 0:
+                raise ValueError(
+                    f"Body '{object_name}' is too large for the plate"
+                )
 
-    # Backward-compatible alias for the earlier misspelled method name.
+            original_position = model.body(object_name).pos.copy()
+            while not Passed and attempts < max_attempts:
+                attempts += 1
+
+                # random offsets within the allowable range
+                random_x_offset = np.random.uniform(
+                    -1 * max_x_offset, max_x_offset
+                )
+                random_y_offset = np.random.uniform(
+                    -1 * max_y_offset, max_y_offset
+                )
+
+                # adjusting to plate coordinates
+                object_x_position = plate_center[0] + random_x_offset
+                object_y_position = plate_center[1] + random_y_offset
+                model.body(object_name).pos[:2] = [
+                    object_x_position,
+                    object_y_position,
+                ]
+
+                # checking for collisions
+                if not self.colision_check(
+                    model,
+                    object_name,
+                    placed_food_object_names,
+                    clearance,
+                ):
+                    Passed = True
+
+            if not Passed:
+                model.body(object_name).pos[:] = original_position
+                raise RuntimeError(
+                    f"Could not place '{object_name}' without overlap after "
+                    f"{max_attempts} attempts"
+                )
+
+            placed_food_object_names.append(object_name)
+
+        return model
+
+    def get_first_geom_in_body(self, model, body_name):
+        # first element
+        first_geom_id = self.get_geom_ids_in_body(model, body_name)[0]
+        return model.geom(first_geom_id).name
+
     def colision_check(
         self,
         model,
@@ -166,98 +202,59 @@ class Enviornment_Randomizer:
         list_of_food_object_names,
         clearance=0.005,
     ):
-        data = mujoco.MjData(model)
-        return self.collision_check(
-            model,
-            data,
-            object_name,
-            list_of_food_object_names,
-            clearance,
-        )
+        primary_geom_ids = self.get_geom_ids_in_body(model, object_name)
 
-    def randomize_position_of_objects(
-        self,
-        list_of_food_object_names,
-        model,
-        plate_radius=0.125,
-        plate_body_name="plate",
-        clearance=0.005,
-        max_attempts=1000,
-    ):
-        """Place wrapper bodies on the plate without food-food overlap."""
-        body_names = [str(name) for name in list_of_food_object_names]
+        list_of_geom_ids = []
+        for body in list_of_food_object_names:
+            if str(body) == object_name:
+                continue
+            geom_ids = self.get_geom_ids_in_body(model, str(body))
+            list_of_geom_ids.extend(geom_ids)
+
+        # convert to numpy array
+        list_of_geom_ids = np.array(list_of_geom_ids, dtype=int)
+
+        # get data
         data = mujoco.MjData(model)
+        # loading positions for the distance checks
         mujoco.mj_forward(model, data)
-        plate_center = data.body(plate_body_name).xpos[:2].copy()
-        plate_height = float(data.body(plate_body_name).xpos[2])
-        visible_body_names = []
 
-        for body_name in body_names:
-            world_center, _ = self.get_body_geom_world_bounds(
-                model, data, body_name
-            )
-            if world_center[2] >= plate_height:
-                visible_body_names.append(body_name)
-
-        placed_body_names = []
-        for object_name in visible_body_names:
-            _, object_dimensions = self.get_body_geom_world_bounds(
-                model, data, object_name
-            )
-
-            object_half_dimensions = object_dimensions[:2] / 2
-            if np.linalg.norm(object_half_dimensions) > plate_radius:
-                raise ValueError(
-                    f"Body '{object_name}' is too large for a plate with "
-                    f"radius {plate_radius} m"
-                )
-
-            original_position = model.body(object_name).pos.copy()
-            placed = False
-
-            for _ in range(max_attempts):
-                candidate_xy = plate_center + self.rng.uniform(
-                    low=-plate_radius + object_half_dimensions,
-                    high=plate_radius - object_half_dimensions,
-                )
-
-                footprint_corners = candidate_xy + np.array(
-                    [
-                        [-object_half_dimensions[0], -object_half_dimensions[1]],
-                        [-object_half_dimensions[0], object_half_dimensions[1]],
-                        [object_half_dimensions[0], -object_half_dimensions[1]],
-                        [object_half_dimensions[0], object_half_dimensions[1]],
-                    ]
-                )
-                if np.any(
-                    np.linalg.norm(
-                        footprint_corners - plate_center,
-                        axis=1,
-                    ) > plate_radius
-                ):
-                    continue
-
-                model.body(object_name).pos[:2] = candidate_xy
-
-                if not self.collision_check(
+        for primary_geom_id in primary_geom_ids:
+            for other_geom_id in list_of_geom_ids:
+                distance = mujoco.mj_geomDistance(
                     model,
                     data,
-                    object_name,
-                    placed_body_names,
-                    clearance,
-                ):
-                    placed = True
-                    break
+                    primary_geom_id,
+                    int(other_geom_id),
+                    max(1.0, clearance + 1.0),
+                    None,
+                )
+                if distance <= clearance:
+                    return True  # Overlap detected
 
-            if not placed:
-                model.body(object_name).pos[:] = original_position
-                mujoco.mj_forward(model, data)
-                raise RuntimeError(
-                    f"Could not place '{object_name}' without overlap after "
-                    f"{max_attempts} attempts. Increase plate_radius, reduce "
-                    "clearance, or place fewer visible objects."
+        return False  # it passed all checks
+
+    def get_geom_ids_in_body(self, model, body_name):
+        root_body_id = model.body(body_name).id
+        geom_ids = []
+
+        for geom_id in range(model.ngeom):
+            current_body_id = int(model.geom_bodyid[geom_id])
+
+            while (
+                current_body_id != root_body_id
+                and current_body_id != 0
+            ):
+                current_body_id = int(
+                    model.body_parentid[current_body_id]
                 )
 
-            placed_body_names.append(object_name)
+            if current_body_id == root_body_id:
+                geom_ids.append(geom_id)
 
-        return model
+        if not geom_ids:
+            raise ValueError(
+                f"Body '{body_name}' has no descendant geoms"
+            )
+
+        return geom_ids
