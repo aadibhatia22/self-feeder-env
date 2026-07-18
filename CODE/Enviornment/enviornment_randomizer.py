@@ -7,7 +7,7 @@ import numpy as np
 class Enviornment_Randomizer:
 
     def __init__(self):
-        pass
+        self.original_camera_positions = {}
 
     """ COLOR RANDOMIZATION"""
 
@@ -177,18 +177,103 @@ class Enviornment_Randomizer:
 
         return model
 
-    def randomize_camera_position(self, model, camera_name, max_offset_x, max_offset_y, max_offset_z):
+    def randomize_camera_position(self, model, camera_name, offset_bounds):
         camera = model.camera(camera_name)
-        original_position = camera.pos.copy()
-        max_offsets = np.array([max_offset_x, max_offset_y, max_offset_z], dtype=float)
-        new_pos = np.array([0.0,0.0,0.0])
-        for i in range(3):  # x, y, z
-            random_offset = np.random.uniform(-max_offsets[i], max_offsets[i])
-            new_pos[i] = original_position[i] + random_offset
+        camera_key = (id(model), camera_name)
+        if camera_key not in self.original_camera_positions:
+            self.original_camera_positions[camera_key] = camera.pos.copy()
+        original_position = self.original_camera_positions[camera_key]
+        offset_bounds = np.asarray(offset_bounds, dtype=float)
+        if offset_bounds.shape != (3, 2):
+            raise ValueError(
+                "offset_bounds must contain [lower, upper] bounds for x, y, and z"
+            )
+        if np.any(offset_bounds[:, 0] > offset_bounds[:, 1]):
+            raise ValueError("Each lower bound must be less than or equal to its upper bound")
+
+        random_offsets = np.random.uniform(
+            offset_bounds[:, 0], offset_bounds[:, 1]
+        )
+        new_pos = original_position + random_offsets
         camera.pos[:] = new_pos
         return model
 
-    
+    """LIGHTING"""
+    def randomize_lighting(self, model, min_number_of_lights, max_number_of_lights, x_offset_range, y_offset_range, z_offset_range):
+        rng = np.random.default_rng()
+
+        # Keep the total scene illumination stable as the number of active
+        # lights changes. Diffuse is the main light, ambient is low fill,
+        # and specular adds only moderate highlights.
+        min_total_diffuse = 0.55
+        max_total_diffuse = 1.00
+        min_total_ambient = 0.02
+        max_total_ambient = 0.12
+        min_total_specular = 0.05
+        max_total_specular = 0.30
+        min_color_tint = 0.90
+        max_color_tint = 1.00
+
+        """NEEDS TO BE MANUALLY SET"""
+        max_number_of_lights_allowable = model.nlight
+        max_number_of_lights = min(max_number_of_lights_allowable, max_number_of_lights)
+
+
+        #number of lights being created
+        number_of_active_lights = rng.integers(min_number_of_lights, max_number_of_lights+1)
+        if x_offset_range.size != 2 or y_offset_range.size != 2 or z_offset_range.size != 2:
+            return None
+
+        if number_of_active_lights > 0:
+            light_weights = rng.dirichlet(
+                np.ones(number_of_active_lights)
+            )
+            total_diffuse = rng.uniform(
+                min_total_diffuse, max_total_diffuse
+            )
+            total_ambient = rng.uniform(
+                min_total_ambient, max_total_ambient
+            )
+            total_specular = rng.uniform(
+                min_total_specular, max_total_specular
+            )
+        else:
+            light_weights = np.array([])
+
+        number_of_lights_changed = 0
+        for i in range(number_of_active_lights):
+            x_pos = rng.uniform(x_offset_range[0], x_offset_range[1])
+            y_pos = rng.uniform(y_offset_range[0], y_offset_range[1])
+            z_pos = rng.uniform(z_offset_range[0], z_offset_range[1])
+            new_camera_pos = [x_pos, y_pos, z_pos]
+            light = model.light(i)
+            light.active[0] = 1
+            light.pos[:] = new_camera_pos
+            light.dir[:] = [0.0,0.0,-1.0]
+
+            # A single physical light uses the same slight RGB tint for its
+            # diffuse, ambient, and specular contributions.
+            color_tint = rng.uniform(
+                min_color_tint, max_color_tint, size=3
+            )
+            color_tint /= np.max(color_tint)
+            light.diffuse[:] = (
+                total_diffuse * light_weights[i] * color_tint
+            )
+            light.ambient[:] = (
+                total_ambient * light_weights[i] * color_tint
+            )
+            light.specular[:] = (
+                total_specular * light_weights[i] * color_tint
+            )
+            number_of_lights_changed+=1
+
+        for i in range (number_of_lights_changed, max_number_of_lights_allowable):
+            light = model.light(i)
+            light.active[0]=0
+
+        return model
+
     
     """HELPER METHODS"""
     def get_body_geom_world_bounds(self, model, data, body_name):
@@ -358,3 +443,4 @@ class Enviornment_Randomizer:
                     )
 
         return model
+    
