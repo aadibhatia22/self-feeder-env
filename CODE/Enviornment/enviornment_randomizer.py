@@ -160,6 +160,23 @@ class Enviornment_Randomizer:
                         break
 
         return model
+    """ROTATION RANDOMIZATION"""
+
+    def randomize_rotation(self,model, object_list):
+        rng = np.random.default_rng()
+        #assume bodies are sent in
+        for body in object_list:
+            #we only need rotation across z_axis
+            angle = rng.uniform(-np.pi,np.pi)
+            #quaternion rotation
+            model.body(body).quat[:]= [
+                np.cos(angle/2),
+                0.0,
+                0.0,
+                np.sin(angle/2)
+            ]
+        return model
+        
 
     """ POSITION RANDOMIZATION"""
     def randomize_position_of_objects(
@@ -239,7 +256,7 @@ class Enviornment_Randomizer:
             placed_food_object_names.append(object_name)
 
         return model
-
+    
     def randomize_camera_position(self, model, camera_name, offset_bounds):
         camera = model.camera(camera_name)
         camera_key = (id(model), camera_name)
