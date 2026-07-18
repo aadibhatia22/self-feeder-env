@@ -98,6 +98,69 @@ class Enviornment_Randomizer:
 
         return model
 
+    """ SIZE RANDOMIZATION"""
+    def randomize_size(
+        self,
+        list_of_food_body_names,
+        model,
+        primitive_size_ranges,
+    ):
+        """Defines the components for each primative type"""
+        primitive_size_components = {
+            "sphere": (mujoco.mjtGeom.mjGEOM_SPHERE, 1),
+            "capsule": (mujoco.mjtGeom.mjGEOM_CAPSULE, 2),
+            "ellipsoid": (mujoco.mjtGeom.mjGEOM_ELLIPSOID, 3),
+            "cylinder": (mujoco.mjtGeom.mjGEOM_CYLINDER, 2),
+            "box": (mujoco.mjtGeom.mjGEOM_BOX, 3),
+        }
+
+        validated_ranges = {}
+        for primitive_name, bounds in primitive_size_ranges.items():
+            number_of_size_components = primitive_size_components[primitive_name][1]
+            bounds = np.asarray(bounds, dtype=float)
+            expected_shape = (number_of_size_components, 2)
+            if bounds.shape != expected_shape:
+                raise ValueError(
+                    f"'{primitive_name}' ranges must have shape "
+                    f"{expected_shape}"
+                )
+            if np.any(bounds[:, 0] <= 0):
+                raise ValueError(
+                    f"'{primitive_name}' minimum sizes must be positive"
+                )
+            if np.any(bounds[:, 0] > bounds[:, 1]):
+                raise ValueError(
+                    f"'{primitive_name}' minimum sizes cannot exceed "
+                    "their maximum sizes"
+                )
+            validated_ranges[primitive_name] = bounds
+
+        rng = np.random.default_rng()
+        processed_geom_ids = set()
+
+        for body_name in list_of_food_body_names:
+            for geom_id in self.get_geom_ids_in_body(model, str(body_name)):
+                if geom_id in processed_geom_ids:
+                    continue
+                processed_geom_ids.add(geom_id)
+
+                geom_type = model.geom_type[geom_id]
+                for primitive_name, (
+                    primitive_type,
+                    number_of_size_components,
+                ) in primitive_size_components.items():
+                    if (
+                        geom_type == primitive_type
+                        and primitive_name in validated_ranges
+                    ):
+                        bounds = validated_ranges[primitive_name]
+                        model.geom_size[
+                            geom_id, :number_of_size_components
+                        ] = rng.uniform(bounds[:, 0], bounds[:, 1])
+                        break
+
+        return model
+
     """ POSITION RANDOMIZATION"""
     def randomize_position_of_objects(
         self,
@@ -274,7 +337,7 @@ class Enviornment_Randomizer:
 
         return model
 
-    
+
     """HELPER METHODS"""
     def get_body_geom_world_bounds(self, model, data, body_name):
         """Return the world-space center and dimensions of a body's geoms."""
@@ -299,9 +362,13 @@ class Enviornment_Randomizer:
                     f"Body '{body_name}' contains an infinite plane geom"
                 )
 
-            # geom_aabb is [local center, local half dimensions].
+            # geom_aabb is [local center, local half dimensions]. Primitive
+            # half dimensions are derived from the current randomized size
+            # because geom_aabb retains its original compiled value.
             local_center = model.geom_aabb[geom_id, :3]
-            local_half_dimensions = model.geom_aabb[geom_id, 3:]
+            local_half_dimensions = self.get_geom_local_half_dimensions(
+                model, geom_id
+            )
             local_corners = (
                 local_center
                 + corner_signs * local_half_dimensions
@@ -323,6 +390,32 @@ class Enviornment_Randomizer:
         world_dimensions = world_maximum - world_minimum
 
         return world_center, world_dimensions
+    def get_geom_local_half_dimensions(self, model, geom_id):
+        """Return current local half dimensions for a geom."""
+        geom_type = model.geom_type[geom_id]
+        geom_size = model.geom_size[geom_id]
+
+        if geom_type == mujoco.mjtGeom.mjGEOM_SPHERE:
+            return np.repeat(geom_size[0], 3)
+        if geom_type == mujoco.mjtGeom.mjGEOM_CAPSULE:
+            return np.array([
+                geom_size[0],
+                geom_size[0],
+                geom_size[0] + geom_size[1],
+            ])
+        if geom_type == mujoco.mjtGeom.mjGEOM_ELLIPSOID:
+            return geom_size[:3].copy()
+        if geom_type == mujoco.mjtGeom.mjGEOM_CYLINDER:
+            return np.array([
+                geom_size[0],
+                geom_size[0],
+                geom_size[1],
+            ])
+        if geom_type == mujoco.mjtGeom.mjGEOM_BOX:
+            return geom_size[:3].copy()
+
+        # Meshes and other non-randomized geom types retain compiled bounds.
+        return model.geom_aabb[geom_id, 3:].copy()
     def get_geom_ids_in_body(self, model, body_name):
         root_body_id = model.body(body_name).id
         geom_ids = []
@@ -443,4 +536,3 @@ class Enviornment_Randomizer:
                     )
 
         return model
-    
