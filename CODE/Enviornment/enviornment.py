@@ -151,8 +151,11 @@ class Enviornment:
         
         return -1
     
-    def step(self):
-
+    def step(self, x_cord_pred:float, y_cord_pred:float):
+        reward = self.reward(x_cord_pred, y_cord_pred)
+        #If object detected
+        if self.current_overlap_body:
+            self.remove_object(self.current_overlap_body)
 
         self.current_overlap_body = None
         return -1
@@ -161,9 +164,11 @@ class Enviornment:
     def update(self):
         self.model, self.data = Enviornment_Randomizer.reset()
     
-    def object_at_cord(self, x_cord: float, y_cord: float) -> bool:
+    #returns body name if True
+    def object_at_cord(self, x_cord: float, y_cord: float, update_current_overlap:bool = False) -> str:
         #reset 
-        self.current_overlap_body = None
+        if update_current_overlap:
+            self.current_overlap_body = None
         #update position of checking geom
         self.checking_geom_to_pos(x_cord=x_cord, y_cord=y_cord,z_cord=self.Randomization_Constants.in_scene_z_coordinate)
         checking_geom_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_GEOM, self.Randomization_Constants.checking_geom_name)
@@ -175,82 +180,46 @@ class Enviornment:
                 # Call the function cleanly
                 distance = mujoco.mj_geomDistance(self.model, self.data, checking_geom_id, food_geom, distmax, dummy_fromto)
                 if distance<=0:
-                    self.current_overlap_body = food_body
+                    if update_current_overlap:
+                        self.current_overlap_body = food_body
                     self.checking_geom_to_pos(x_cord=-1, y_cord=-1,z_cord=-1)
-                    return True
+                    return food_body
         
         self.checking_geom_to_pos(x_cord=-1, y_cord=-1,z_cord=-1)
-        return False
+        return None
 
     
-    def radius_condition(x_cord: float, y_cord: float) -> bool:
-        return -1
+    def radius_condition(self,x_cord: float, y_cord: float) -> float:
+        half_length = self.suction_diameter_in_meters/2
+        #points on the circle with radius half_length
+        checking_offsets = [
+            [half_length, 0, 0],
+            [half_length / np.sqrt(2), half_length / np.sqrt(2), 0],
+            [0, half_length, 0],
+            [-half_length / np.sqrt(2), half_length / np.sqrt(2), 0],
+            [-half_length, 0, 0],
+            [-half_length / np.sqrt(2), -half_length / np.sqrt(2), 0],
+            [0, -half_length, 0],
+            [half_length / np.sqrt(2), -half_length / np.sqrt(2), 0],
+        ]
+        checking_offsets = np.array(checking_offsets)
+
+        numberFailed = 0.0
+        for offset in checking_offsets:
+            returned_body = self.object_at_cord(x_cord=x_cord, y_cord=y_cord,update_current_overlap = False)
+            if returned_body !=
+
+
+        return -1.0
     
     def scale_for_optimal_position(x_cord: float, y_cord:float) -> float:
         return -1
 
     def pixel_to_cordinates(self, x_pixel:float, y_pixel:float) -> tuple[float, float]:
-        if not np.isfinite(x_pixel) or not np.isfinite(y_pixel):
-            raise ValueError("Pixel coordinates must be finite")
-
-        camera_id = mujoco.mj_name2id(
-            self.model,
-            mujoco.mjtObj.mjOBJ_CAMERA,
-            self.Randomization_Constants.camera_name,
-        )
-        if camera_id == -1:
-            raise ValueError(
-                f"Camera '{self.Randomization_Constants.camera_name}' "
-                "does not exist in the model"
-            )
-
-        image_width, image_height = self.model.cam_resolution[camera_id]
-        if not 0 <= x_pixel < image_width or not 0 <= y_pixel < image_height:
-            raise ValueError(
-                f"Pixel must be inside the {image_width}x{image_height} image"
-            )
-
-        mujoco.mj_forward(self.model, self.data)
-
-        vertical_fov = np.deg2rad(self.model.cam_fovy[camera_id])
-        half_image_height = np.tan(vertical_fov / 2.0)
-        aspect_ratio = image_width / image_height
-        half_image_width = aspect_ratio * half_image_height
-
-        normalized_x = (2.0 * x_pixel / image_width) - 1.0
-        normalized_y = 1.0 - (2.0 * y_pixel / image_height)
-
-        camera_ray = np.array(
-            [
-                normalized_x * half_image_width,
-                normalized_y * half_image_height,
-                -1.0,
-            ],
-            dtype=np.float64,
-        )
-
-        camera_rotation = self.data.cam_xmat[camera_id].reshape(3, 3)
-        world_ray = camera_rotation @ camera_ray
-        camera_position = self.data.cam_xpos[camera_id]
-
-        if np.isclose(world_ray[2], 0.0):
-            raise ValueError("The camera ray is parallel to the active plane")
-
-        active_z = self.Randomization_Constants.in_scene_z_coordinate
-        ray_scale = (
-            active_z - camera_position[2]
-        ) / world_ray[2]
-
-        if ray_scale < 0:
-            raise ValueError("The active plane is behind the camera")
-
-        world_point = camera_position + ray_scale * world_ray
-
-        return float(world_point[0]), float(world_point[1])
-
+       return -1
    
 
-    def remove_object():
+    def remove_object(body_name:str):
 
         return -1
     
