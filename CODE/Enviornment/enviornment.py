@@ -188,10 +188,11 @@ class Enviornment:
         self.checking_geom_to_pos(x_cord=-1, y_cord=-1,z_cord=-1)
         return None
 
-    
+    #returns precent passed for reward shaping
     def radius_condition(self,x_cord: float, y_cord: float) -> float:
         half_length = self.suction_diameter_in_meters/2
         #points on the circle with radius half_length
+        numberOfPoints = 8
         checking_offsets = [
             [half_length, 0, 0],
             [half_length / np.sqrt(2), half_length / np.sqrt(2), 0],
@@ -207,13 +208,24 @@ class Enviornment:
         numberFailed = 0.0
         for offset in checking_offsets:
             returned_body = self.object_at_cord(x_cord=x_cord, y_cord=y_cord,update_current_overlap = False)
-            if returned_body !=
+            if returned_body != self.current_overlap_body:
+                numberFailed+=1
 
-
-        return -1.0
+        return numberFailed*1.0/numberOfPoints
     
-    def scale_for_optimal_position(x_cord: float, y_cord:float) -> float:
-        return -1
+    def distance_to_optimal_position(self,x_cord: float, y_cord:float) -> float:
+        if self.current_overlap_body is None:
+            raise ValueError("No overlapping food body is currently selected")
+        body_name = self.current_overlap_body
+        body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, body_name)
+
+        optimal_point = self.data.xipos[body_id]
+        #only x and y
+        optimal_point = optimal_point[:2]
+
+        #calculate distance between the points
+        distance = np.sqrt((x_cord - optimal_point[0])**2 + (y_cord - optimal_point[1])**2)
+        return distance
 
     def pixel_to_cordinates(self, x_pixel:float, y_pixel:float) -> tuple[float, float]:
        return -1
