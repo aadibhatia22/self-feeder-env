@@ -8,6 +8,7 @@ class Enviornment_Randomizer:
 
     def __init__(self):
         self.original_camera_positions = {}
+        self.original_camera_quaternions = {}
 
     """ COLOR RANDOMIZATION"""
 
@@ -161,7 +162,6 @@ class Enviornment_Randomizer:
 
         return model
     """ROTATION RANDOMIZATION"""
-
     def randomize_rotation(self,model, object_list):
         rng = np.random.default_rng()
         #assume bodies are sent in
@@ -177,6 +177,69 @@ class Enviornment_Randomizer:
             ]
         return model
         
+    """CAMERA ROTATION RANDOMIZATION"""
+    def camera_rotation_randomization(self, model, camera_name, degree_limit, chance_of_rotation=0.75):
+        if degree_limit < 0:
+            raise ValueError("degree_limit must be nonnegative")
+        if not 0 <= chance_of_rotation <= 1:
+            raise ValueError("chance_of_rotation must be between 0 and 1")
+
+        radian_limit = degree_limit * np.pi/180
+        rng = np.random.default_rng()
+        random_number = rng.random()
+        isRotation = False
+        if random_number < chance_of_rotation:
+            isRotation = True
+
+        camera = model.camera(camera_name)
+        camera_key = (id(model), camera_name)
+        if camera_key not in self.original_camera_quaternions:
+            self.original_camera_quaternions[
+                camera_key
+            ] = camera.quat.copy()
+        original_quaternion = self.original_camera_quaternions[camera_key]
+        camera.quat[:] = original_quaternion
+
+        if isRotation:
+            axis_determiner = rng.random()
+            rotation_amount = rng.uniform(-radian_limit, radian_limit)
+            half_rotation = rotation_amount / 2
+            if axis_determiner<0.33:
+                #x axis rotation
+                rotation_quaternion = np.array([
+                    np.cos(half_rotation),
+                    np.sin(half_rotation),
+                    0.0,
+                    0.0,
+                ])
+            elif axis_determiner<0.66:
+                #y axis rotation
+                rotation_quaternion = np.array([
+                    np.cos(half_rotation),
+                    0.0,
+                    np.sin(half_rotation),
+                    0.0,
+                ])
+            else:
+                #z axis rotation
+                rotation_quaternion = np.array([
+                    np.cos(half_rotation),
+                    0.0,
+                    0.0,
+                    np.sin(half_rotation),
+                ])
+
+            randomized_quaternion = np.empty(4)
+            mujoco.mju_mulQuat(
+                randomized_quaternion,
+                original_quaternion,
+                rotation_quaternion,
+            )
+            camera.quat[:] = randomized_quaternion
+
+        return model
+
+
 
     """ POSITION RANDOMIZATION"""
     def randomize_position_of_objects(
