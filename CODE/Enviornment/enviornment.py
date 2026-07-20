@@ -219,25 +219,39 @@ class Enviornment:
         body_name = self.current_overlap_body
         body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, body_name)
 
-        optimal_point = self.data.xipos[body_id]
-        #only x and y
-        optimal_point = optimal_point[:2]
+        optimal_point = self.data.subtree_com[body_id, :2]
 
         #calculate distance between the points
         distance = np.sqrt((x_cord - optimal_point[0])**2 + (y_cord - optimal_point[1])**2)
-        return distance
+        return float(distance)
 
     def pixel_to_cordinates(self, x_pixel:float, y_pixel:float) -> tuple[float, float]:
        return -1
    
 
-    def remove_object(body_name:str):
 
-        return -1
-    
+    def remove_object(self,body_name:str):
+        self.model.body(body_name).pos = np.array([self.model.body(body_name).pos[0], self.model.body(body_name).pos[1], self.Randomization_Constants.out_of_scene_z_coordinate])
+        self.mujoco.mj_forward(self.model, self.data)
 
     def checking_geom_to_pos(self, x_cord:float, y_cord:float, z_cord:float):
         geom_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_GEOM, self.Randomization_Constants.checking_geom_name)
         new_geom_x_y_z = np.array([x_cord,y_cord,z_cord])
         self.model.geom_pos[geom_id] = new_geom_x_y_z
         mujoco.mj_forward(self.model, self.data)
+
+    """CAMERA METHODS"""
+
+    #calculating the intrisic matrix:
+    def calculate_intrisic_matrix(self):
+        camera_id = self.model.cam(self.Randomization_Constants.camera_name).id
+        width = self.model.cam_targetwidth[camera_id]
+        height = self.model.cam_targetheight[camera_id]
+        fovy_degrees = float(self.model.cam_fovy[camera_id])
+        f_x = width/(2 * np.tan(fovy_degrees /2.0))
+        f_y = f_x
+        s = 0
+        self.intrinsic_matrix = np.array([f_x, s, width/2.0] , 
+                  [0, f_y, height/2.0],
+                  [0, 0, 1])
+        return self.intrinsic_matrix
