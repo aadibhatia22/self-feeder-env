@@ -262,18 +262,10 @@ class Enviornment:
         return self.intrinsic_matrix
     def calculate_extrensic_matrix(self):
         camera_id = self.model.camera(self.Randomization_Constants.camera_name).id
+        #for saftey
+        mujoco.mj_forward(self.model, self.data)
+
         camera_to_world_rotation = (self.data.cam_xmat[camera_id].reshape(3, 3).copy())
-
-        #checking for all zeros:
-        is_all_zeros = not np.any(camera_to_world_rotation) 
-        if is_all_zeros:
-            mujoco.mj_forward(self.model, self.data)
-            is_all_zeros = not np.any(camera_to_world_rotation) 
-            if is_all_zeros:
-                #camera not allowed at 0,0,0
-                raise RuntimeError("Camera at 0,0,0")
-
-
 
         position = self.data.cam(camera_id).xpos
         position = np.array(position)
