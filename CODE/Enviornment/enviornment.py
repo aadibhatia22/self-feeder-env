@@ -244,14 +244,23 @@ class Enviornment:
 
     #calculating the intrisic matrix:
     def calculate_intrisic_matrix(self):
-        camera_id = self.model.cam(self.Randomization_Constants.camera_name).id
-        width = self.model.cam_targetwidth[camera_id]
-        height = self.model.cam_targetheight[camera_id]
-        fovy_degrees = float(self.model.cam_fovy[camera_id])
-        f_x = width/(2 * np.tan(fovy_degrees /2.0))
-        f_y = f_x
-        s = 0
-        self.intrinsic_matrix = np.array([f_x, s, width/2.0] , 
-                  [0, f_y, height/2.0],
-                  [0, 0, 1])
+        "USING INTRINSIC MATRIX FORMULA"
+        camera_id = self.model.camera(self.Randomization_Constants.camera_name).id
+
+        width, height = self.model.cam_resolution[camera_id]
+        fovy_radians = np.deg2rad(float(self.model.cam_fovy[camera_id]))
+
+        f_y = height / (2.0 * np.tan(fovy_radians / 2.0))
+        f_x = f_y
+
+        self.intrinsic_matrix = np.array([
+            [f_x, 0.0, width / 2.0],
+            [0.0, f_y, height / 2.0],
+            [0.0, 0.0, 1.0],
+        ])
+
         return self.intrinsic_matrix
+    def calculate_extrensic_matrix(self):
+        camera_id = self.model.camera(self.Randomization_Constants.camera_name).id
+        camera_to_world_rotation = (self.data.cam_xmat[camera_id].reshape(3, 3).copy())
+        tx, ty, tx = self.data.cam(camera_id).xpos
