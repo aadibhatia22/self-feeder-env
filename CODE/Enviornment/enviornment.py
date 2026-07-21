@@ -263,4 +263,19 @@ class Enviornment:
     def calculate_extrensic_matrix(self):
         camera_id = self.model.camera(self.Randomization_Constants.camera_name).id
         camera_to_world_rotation = (self.data.cam_xmat[camera_id].reshape(3, 3).copy())
-        tx, ty, tx = self.data.cam(camera_id).xpos
+        position = self.data.cam(camera_id).xpos
+        position = np.array(position)
+        column_vector_position = position.reshape(3,1)
+        #Takes a 3x3 matrix and concats a 1x3 on the right side to make a 4x3
+        self.extrenisic_matrix = np.hstack(camera_to_world_rotation,column_vector_position)
+        return self.extrenisic_matrix
+    
+    def calculate_camera_matrix(self):
+        #Reset both and recalculate just in case
+        self.extrenisic_matrix = None
+        self.intrinsic_matrix = None
+        self.calculate_intrisic_matrix()
+        self.calculate_extrensic_matrix()
+        #intrisic is 3x3, extrensic is 3x4 so do matrix mult with @
+        self.calculate_camera_matrix = self.intrinsic_matrix @ self.extrenisic_matrix
+        return self.calculate_camera_matrix
