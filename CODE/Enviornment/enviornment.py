@@ -263,11 +263,24 @@ class Enviornment:
     def calculate_extrensic_matrix(self):
         camera_id = self.model.camera(self.Randomization_Constants.camera_name).id
         camera_to_world_rotation = (self.data.cam_xmat[camera_id].reshape(3, 3).copy())
+
+        #checking for all zeros:
+        is_all_zeros = not np.any(camera_to_world_rotation) 
+        if is_all_zeros:
+            mujoco.mj_forward(self.model, self.data)
+            is_all_zeros = not np.any(camera_to_world_rotation) 
+            if is_all_zeros:
+                #camera not allowed at 0,0,0
+                raise RuntimeError("Camera at 0,0,0")
+
+
+
         position = self.data.cam(camera_id).xpos
         position = np.array(position)
+
         column_vector_position = position.reshape(3,1)
         #Takes a 3x3 matrix and concats a 1x3 on the right side to make a 4x3
-        self.extrenisic_matrix = np.hstack(camera_to_world_rotation,column_vector_position)
+        self.extrenisic_matrix = np.hstack((camera_to_world_rotation,column_vector_position))
         return self.extrenisic_matrix
     
     def calculate_camera_matrix(self):
@@ -277,5 +290,5 @@ class Enviornment:
         self.calculate_intrisic_matrix()
         self.calculate_extrensic_matrix()
         #intrisic is 3x3, extrensic is 3x4 so do matrix mult with @
-        self.calculate_camera_matrix = self.intrinsic_matrix @ self.extrenisic_matrix
+        self.camera_matrix = self.intrinsic_matrix @ self.extrenisic_matrix
         return self.calculate_camera_matrix
