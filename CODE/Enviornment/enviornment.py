@@ -262,18 +262,42 @@ class Enviornment:
         return self.intrinsic_matrix
     def calculate_extrensic_matrix(self):
         camera_id = self.model.camera(self.Randomization_Constants.camera_name).id
-        #for saftey
+        #for saftey to prevent 0 0 0 
         mujoco.mj_forward(self.model, self.data)
 
         camera_to_world_rotation = (self.data.cam_xmat[camera_id].reshape(3, 3).copy())
+        #for a rotation matrix its inverse is = to its transpose
+        world_to_camera_rotation = camera_to_world_rotation.T
 
-        position = self.data.cam(camera_id).xpos
-        position = np.array(position)
+        #this is close to the rotation matrix we need HOWEVER Mujoco uses the camera convention where we need to invert z and y axis
+        
+        #transformation needed to perform what just was mentioned
+        axis_conversion = np.diag([1.0, -1.0, -1.0])
 
-        column_vector_position = position.reshape(3,1)
-        #Takes a 3x3 matrix and concats a 1x3 on the right side to make a 4x3
-        self.extrenisic_matrix = np.hstack((camera_to_world_rotation,column_vector_position))
+        #converting with MM for mujoco precedent
+        world_to_camera_rotation = axis_conversion @ world_to_camera_rotation
+
+        #adding offsets 
+        camera_position_world = self.data.cam_xpos[camera_id].copy()
+
+        #rotate the camera position to be in this rotated frame
+        camera_position_in_rotated_axes = world_to_camera_rotation @ camera_position_world
+
+        #translation is negative since when moving a coordinate system point moves other way
+        translation = -1* camera_position_in_rotated_axes
+
+        
+        #Takes a 3x3 matrix and concats a 3x1   on the right side to make a 4x3
+        self.extrenisic_matrix = np.hstack((world_to_camera_rotation,translation.reshape(3, 1)))
         return self.extrenisic_matrix
+
+        """LOGIC:
+        
+        I have now rotated it to the proper orentation, but know I need to translate the origin of this coordiante system to the camera coordinate system. 
+        Since the axises of the world coordiante system are now rotated how do i find the amount i need to move along each axis to get to the camera point? 
+        Is it that i need to rotate the camera point the opposite direction (since rotating a point not a plane) and then use its coordinates as teh translation
+        """
+
     
     def calculate_camera_matrix(self):
         #Reset both and recalculate just in case
@@ -283,4 +307,4 @@ class Enviornment:
         self.calculate_extrensic_matrix()
         #intrisic is 3x3, extrensic is 3x4 so do matrix mult with @
         self.camera_matrix = self.intrinsic_matrix @ self.extrenisic_matrix
-        return self.calculate_camera_matrix
+        return self.camera_matrix
