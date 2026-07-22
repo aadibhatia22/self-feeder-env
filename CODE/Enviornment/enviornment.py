@@ -156,15 +156,127 @@ class Enviornment:
         #If object detected
         if self.current_overlap_body:
             self.remove_object(self.current_overlap_body)
-
+        #DO A FORWARD
         self.current_overlap_body = None
         return -1
     
 
     def update(self):
         self.model, self.data = Enviornment_Randomizer.reset()
+
+
+
+
+    """Transformation methods"""
+
+    def world_to_pixel(self, x_cord:float, y_cord:float) -> tuple[float, float]:
+        #we need the z cord since different z_cord's give differnet pixels
+        
+       # Z cord is manually set, 1.0 is needed for the homogenous coordinate
+       world_homogenous = np.array([x_cord,y_cord, Randomization_Constants.in_scene_z_coordinate, 1.0])
+       #getting camera matrix
+       self.calculate_camera_matrix()
+
+       #multiplying camera_m (3x4) by world_homog (4x1)
+       pixel_homogenous = self.camera_matrix @ world_homogenous
+
+       return -1
+
+
+    #looks up to find the nearest surface given active z
+    def find_z_at_xy(self, x:float, y:float, ztart:float = Randomization_Constants.in_scene_z_coordinate) -> float:
+        #making a vector going straight up
+        direction_vector = np.array([0.0,0.0,1.0])
+        starting_point = np.array([x,y,ztart])
+
+
+
+    def remove_object(self,body_name:str):
+        self.model.body(body_name).pos = np.array([self.model.body(body_name).pos[0], self.model.body(body_name).pos[1], self.Randomization_Constants.out_of_scene_z_coordinate])
+        self.mujoco.mj_forward(self.model, self.data)
+
     
+    """CAMERA METHODS"""
+
+    #calculating the intrisic matrix:
+    def calculate_intrisic_matrix(self):
+        "USING INTRINSIC MATRIX FORMULA"
+        camera_id = self.model.camera(self.Randomization_Constants.camera_name).id
+
+        width, height = self.model.cam_resolution[camera_id]
+        fovy_radians = np.deg2rad(float(self.model.cam_fovy[camera_id]))
+
+        f_y = height / (2.0 * np.tan(fovy_radians / 2.0))
+        f_x = f_y
+
+        self.intrinsic_matrix = np.array([
+            [f_x, 0.0, width / 2.0],
+            [0.0, f_y, height / 2.0],
+            [0.0, 0.0, 1.0],
+        ])
+
+        return self.intrinsic_matrix
+
+    def calculate_extrensic_matrix(self):
+        camera_id = self.model.camera(self.Randomization_Constants.camera_name).id
+        #for saftey to prevent 0 0 0 
+        mujoco.mj_forward(self.model, self.data)
+
+        camera_to_world_rotation = (self.data.cam_xmat[camera_id].reshape(3, 3).copy())
+        #for a rotation matrix its inverse is = to its transpose
+        world_to_camera_rotation = camera_to_world_rotation.T
+
+        #this is close to the rotation matrix we need HOWEVER Mujoco uses the camera convention where we need to invert z and y axis
+        
+        #transformation needed to perform what just was mentioned
+        axis_conversion = np.diag([1.0, -1.0, -1.0])
+
+        #converting with MM for mujoco precedent
+        world_to_camera_rotation = axis_conversion @ world_to_camera_rotation
+
+        #adding offsets 
+        camera_position_world = self.data.cam_xpos[camera_id].copy()
+
+        #rotate the camera position to be in this rotated frame
+        camera_position_in_rotated_axes = world_to_camera_rotation @ camera_position_world
+
+        #translation is negative since when moving a coordinate system point moves other way
+        translation = -1* camera_position_in_rotated_axes
+
+        
+        #Takes a 3x3 matrix and concats a 3x1   on the right side to make a 4x3
+        self.extrenisic_matrix = np.hstack((world_to_camera_rotation,translation.reshape(3, 1)))
+        return self.extrenisic_matrix
+
+        """LOGIC:
+        
+        I have now rotated it to the proper orentation, but know I need to translate the origin of this coordiante system to the camera coordinate system. 
+        Since the axises of the world coordiante system are now rotated how do i find the amount i need to move along each axis to get to the camera point? 
+        Is it that i need to rotate the camera point the opposite direction (since rotating a point not a plane) and then use its coordinates as teh translation
+        """
+
+    def calculate_camera_matrix(self):
+        #Reset both and recalculate just in case
+        self.extrenisic_matrix = None
+        self.intrinsic_matrix = None
+        self.calculate_intrisic_matrix()
+        self.calculate_extrensic_matrix()
+        #intrisic is 3x3, extrensic is 3x4 so do matrix mult with @
+        self.camera_matrix = self.intrinsic_matrix @ self.extrenisic_matrix
+        return self.camera_matrix
+
+
+
+
+
+
+    """NON HEATMAP TRAINING METHODS:"""
+
+    #method 1: Project camera point to real point and see if it passes conditons and see how close it is:
+        #not really needed because we are doing heatmap
     #returns body name if True
+
+    """ 
     def object_at_cord(self, x_cord: float, y_cord: float, update_current_overlap:bool = False) -> str:
         #reset 
         if update_current_overlap:
@@ -212,7 +324,8 @@ class Enviornment:
                 numberFailed+=1
 
         return numberFailed*1.0/numberOfPoints
-    
+
+
     def distance_to_optimal_position(self,x_cord: float, y_cord:float) -> float:
         if self.current_overlap_body is None:
             raise ValueError("No overlapping food body is currently selected")
@@ -225,86 +338,9 @@ class Enviornment:
         distance = np.sqrt((x_cord - optimal_point[0])**2 + (y_cord - optimal_point[1])**2)
         return float(distance)
 
-    def pixel_to_cordinates(self, x_pixel:float, y_pixel:float) -> tuple[float, float]:
-       return -1
-   
-
-
-    def remove_object(self,body_name:str):
-        self.model.body(body_name).pos = np.array([self.model.body(body_name).pos[0], self.model.body(body_name).pos[1], self.Randomization_Constants.out_of_scene_z_coordinate])
-        self.mujoco.mj_forward(self.model, self.data)
-
     def checking_geom_to_pos(self, x_cord:float, y_cord:float, z_cord:float):
-        geom_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_GEOM, self.Randomization_Constants.checking_geom_name)
-        new_geom_x_y_z = np.array([x_cord,y_cord,z_cord])
-        self.model.geom_pos[geom_id] = new_geom_x_y_z
-        mujoco.mj_forward(self.model, self.data)
-
-    """CAMERA METHODS"""
-
-    #calculating the intrisic matrix:
-    def calculate_intrisic_matrix(self):
-        "USING INTRINSIC MATRIX FORMULA"
-        camera_id = self.model.camera(self.Randomization_Constants.camera_name).id
-
-        width, height = self.model.cam_resolution[camera_id]
-        fovy_radians = np.deg2rad(float(self.model.cam_fovy[camera_id]))
-
-        f_y = height / (2.0 * np.tan(fovy_radians / 2.0))
-        f_x = f_y
-
-        self.intrinsic_matrix = np.array([
-            [f_x, 0.0, width / 2.0],
-            [0.0, f_y, height / 2.0],
-            [0.0, 0.0, 1.0],
-        ])
-
-        return self.intrinsic_matrix
-    def calculate_extrensic_matrix(self):
-        camera_id = self.model.camera(self.Randomization_Constants.camera_name).id
-        #for saftey to prevent 0 0 0 
-        mujoco.mj_forward(self.model, self.data)
-
-        camera_to_world_rotation = (self.data.cam_xmat[camera_id].reshape(3, 3).copy())
-        #for a rotation matrix its inverse is = to its transpose
-        world_to_camera_rotation = camera_to_world_rotation.T
-
-        #this is close to the rotation matrix we need HOWEVER Mujoco uses the camera convention where we need to invert z and y axis
-        
-        #transformation needed to perform what just was mentioned
-        axis_conversion = np.diag([1.0, -1.0, -1.0])
-
-        #converting with MM for mujoco precedent
-        world_to_camera_rotation = axis_conversion @ world_to_camera_rotation
-
-        #adding offsets 
-        camera_position_world = self.data.cam_xpos[camera_id].copy()
-
-        #rotate the camera position to be in this rotated frame
-        camera_position_in_rotated_axes = world_to_camera_rotation @ camera_position_world
-
-        #translation is negative since when moving a coordinate system point moves other way
-        translation = -1* camera_position_in_rotated_axes
-
-        
-        #Takes a 3x3 matrix and concats a 3x1   on the right side to make a 4x3
-        self.extrenisic_matrix = np.hstack((world_to_camera_rotation,translation.reshape(3, 1)))
-        return self.extrenisic_matrix
-
-        """LOGIC:
-        
-        I have now rotated it to the proper orentation, but know I need to translate the origin of this coordiante system to the camera coordinate system. 
-        Since the axises of the world coordiante system are now rotated how do i find the amount i need to move along each axis to get to the camera point? 
-        Is it that i need to rotate the camera point the opposite direction (since rotating a point not a plane) and then use its coordinates as teh translation
-        """
-
-    
-    def calculate_camera_matrix(self):
-        #Reset both and recalculate just in case
-        self.extrenisic_matrix = None
-        self.intrinsic_matrix = None
-        self.calculate_intrisic_matrix()
-        self.calculate_extrensic_matrix()
-        #intrisic is 3x3, extrensic is 3x4 so do matrix mult with @
-        self.camera_matrix = self.intrinsic_matrix @ self.extrenisic_matrix
-        return self.camera_matrix
+            geom_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_GEOM, self.Randomization_Constants.checking_geom_name)
+            new_geom_x_y_z = np.array([x_cord,y_cord,z_cord])
+            self.model.geom_pos[geom_id] = new_geom_x_y_z
+            mujoco.mj_forward(self.model, self.data)
+    """

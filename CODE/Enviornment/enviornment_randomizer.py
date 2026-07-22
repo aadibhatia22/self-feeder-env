@@ -616,3 +616,8 @@ class Enviornment_Randomizer:
                     )
 
         return model
+
+    # def scale_to_2d(self,model, body_names, depth:float):
+    #     for body in body_names:
+    #         for geom_id in self.get_geom_ids_in_body(body):
+
