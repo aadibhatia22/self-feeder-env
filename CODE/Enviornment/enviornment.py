@@ -184,11 +184,25 @@ class Enviornment:
 
 
     #looks up to find the nearest surface given active z
-    def find_z_at_xy(self, x:float, y:float, ztart:float = Randomization_Constants.in_scene_z_coordinate) -> float:
+    def find_z_at_xy(self, x:float, y:float, zstart:float = None) -> float:
+        if zstart is None:
+            zstart = self.Randomization_Constants.in_scene_z_coordinate
         #making a vector going straight up
         direction_vector = np.array([0.0,0.0,1.0])
-        starting_point = np.array([x,y,ztart])
+        starting_point = np.array([x,y,zstart])
 
+        #saftey
+        mujoco.mj_forward(self.model,self.data)
+        
+        distance = mujoco.mj_ray(self.model, self.data,starting_point, direction_vector,
+            None,   # include all geom groups
+            True,   # include static geoms
+            -1,     # exclude no body
+            None,   # do not request geom ID
+        )
+        if distance == -1:
+            return -1
+        return zstart + z_cord
 
 
     def remove_object(self,body_name:str):
@@ -272,7 +286,7 @@ class Enviornment:
 
     """NON HEATMAP TRAINING METHODS:"""
 
-    #method 1: Project camera point to real point and see if it passes conditons and see how close it is:
+    #method 1: Project camera point to real point and see if it passes conditons and see how close it is: T
         #not really needed because we are doing heatmap
     #returns body name if True
 
