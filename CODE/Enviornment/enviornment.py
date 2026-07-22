@@ -147,9 +147,7 @@ class Enviornment:
     def observation():
         return -1
     
-    def reward(x_cord_pred: float, y_cord_pred: float) -> float:
-        
-        return -1
+    
     
     def step(self, x_cord_pred:float, y_cord_pred:float):
         reward = self.reward(x_cord_pred, y_cord_pred)
@@ -170,17 +168,31 @@ class Enviornment:
     """Transformation methods"""
 
     def world_to_pixel(self, x_cord:float, y_cord:float) -> tuple[float, float]:
-        #we need the z cord since different z_cord's give differnet pixels
-        
+       #we need the z cord since different z_cord's give differnet pixels
+       z_cord = self.find_z_at_xy(x=x_cord,y=y_cord)
+
+       #handels if the object is in the deactivated z
+       if z_cord == -1:
+           return -1.0, -1.0
+
+
        # Z cord is manually set, 1.0 is needed for the homogenous coordinate
-       world_homogenous = np.array([x_cord,y_cord, Randomization_Constants.in_scene_z_coordinate, 1.0])
+       world_homogenous = np.array([x_cord,y_cord, z_cord, 1.0])
        #getting camera matrix
        self.calculate_camera_matrix()
 
        #multiplying camera_m (3x4) by world_homog (4x1)
        pixel_homogenous = self.camera_matrix @ world_homogenous
 
-       return -1
+       #we now have [u × depth, v × depth, depth], so divide by depth
+       depth = pixel_homogenous[2]
+       if depth <= 0:
+            return -1, -1
+
+       pixel_x = pixel_homogenous[0] * 1.0/depth
+       pixel_y = pixel_homogenous[1] * 1.0/depth
+
+       return float(pixel_x), float(pixel_y)
 
 
     #looks up to find the nearest surface given active z
@@ -202,7 +214,7 @@ class Enviornment:
         )
         if distance == -1:
             return -1
-        return zstart + z_cord
+        return zstart + distance
 
 
     def remove_object(self,body_name:str):
@@ -283,6 +295,8 @@ class Enviornment:
 
 
 
+    """CREATING HEATMAP"""
+
 
     """NON HEATMAP TRAINING METHODS:"""
 
@@ -357,4 +371,7 @@ class Enviornment:
             new_geom_x_y_z = np.array([x_cord,y_cord,z_cord])
             self.model.geom_pos[geom_id] = new_geom_x_y_z
             mujoco.mj_forward(self.model, self.data)
+    def reward(x_cord_pred: float, y_cord_pred: float) -> float:
+            
+            return -1
     """
