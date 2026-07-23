@@ -23,6 +23,10 @@ class Enviornment:
         self.checking_height = checking_height
         self.suction_diameter_in_meters = suction_diameter_in_meters
         self.Model_Constants = Model_Constants
+
+        #renderer
+        self.renderer = None
+
     #RETURNS new data and model after applying randomizaion
 
     """MAIN FLOW"""
@@ -150,8 +154,22 @@ class Enviornment:
         return self.model, self.data
 
     #the camera output given to the model
-    def observation():
-        return -1
+    def observation(self):
+        camera_name = self.Randomization_Constants.camera_name
+        camera_id = self.model.camera(camera_name).id
+        width,height = map(int,self.model.cam_resolution[camera_id])
+
+        #create the renderer
+        if self.renderer is None:
+            self.renderer = mujoco.Renderer(self.model, width=width, height=height)
+
+        # Refresh positions, camera pose, and lighting.
+        mujoco.mj_forward(self.model, self.data)
+
+        self.renderer.update_scene(self.data, camera=camera_id)   
+        return_array = self.renderer.render().copy()
+        self.renderer = None
+        return return_array
     
     
 
