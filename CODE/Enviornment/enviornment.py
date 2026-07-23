@@ -2,6 +2,7 @@ import mujoco
 import numpy as np
 from enviornment_randomizer import Enviornment_Randomizer
 from randomization_constants import Randomization_Constants
+from model_constants import Model_Constants
 class Enviornment:
 
     # def __init__(self, food_object_list, xml_file, enviornment_randomizer, camera_name,
@@ -14,14 +15,14 @@ class Enviornment:
     #     self.observation_height = observation_height
 
     def __init__(self, xml_file: str , Enviornment_Randomizer: Enviornment_Randomizer, Randomization_Constants: Randomization_Constants, 
-                 checking_height:float, suction_diameter_in_meters:float = 0.01): 
+                 checking_height:float, Model_Constants: Model_Constants =None, suction_diameter_in_meters:float = 0.01): 
         self.model = mujoco.MjModel.from_xml_path(xml_file)
         self.data = mujoco.MjData(self.model)
         self.Randomization_Constants = Randomization_Constants
         self.Enviornment_Randomizer = Enviornment_Randomizer
         self.checking_height = checking_height
         self.suction_diameter_in_meters = suction_diameter_in_meters
-
+        self.Model_Constants = Model_Constants
     #RETURNS new data and model after applying randomizaion
     def new_scene(self):
         # Do all the randomizations
@@ -295,8 +296,25 @@ class Enviornment:
 
 
 
-    """CREATING HEATMAP"""
+    """HEATMAP"""
+    def create_heatmap(self, sigma: float, object_centers:np.ndarray)->np.ndarray:
+        #o grid for spatial cordination
+        shape = [self.Model_Constants.output_y_dim, self.Model_Constants.output_x_dim]
+        h, w = shape
+        y, x = np.ogrid[:h, :w]
+        # an empty map filled with zeros
+        global_reward_map = np.zeros(shape)
+        #gausian logic
+        for cy, cx in object_centers:
+            # Calculate Gaussian for this specific object
+            dist_sq = (x - cx)**2 + (y - cy)**2
+            obj_reward = self.Model_Constants.max_reward * np.exp(-dist_sq / (2 * sigma**2))
+            
+            # Take the maximum so overlapping reward fields don't inflate exponentially
+            global_reward_map = np.maximum(global_reward_map, obj_reward)
 
+        return global_reward_map
+        
 
     """NON HEATMAP TRAINING METHODS:"""
 
