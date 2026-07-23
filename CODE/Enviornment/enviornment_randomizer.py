@@ -6,14 +6,17 @@ import numpy as np
 
 class Enviornment_Randomizer:
 
-    def __init__(self):
+    def __init__(self, seed=None):
+        # One generator controls the complete reproducible scene sequence.
+        self.seed = seed
+        self.rng = np.random.default_rng(seed)
         self.original_camera_positions = {}
         self.original_camera_quaternions = {}
 
     """ COLOR RANDOMIZATION"""
 
     def randomize_color_of_single_geom(self, model, geom_name, isBody = False):
-        model.geom(geom_name).rgba[:3] = np.random.rand(3)  # Random RGB values
+        model.geom(geom_name).rgba[:3] = self.rng.random(3)  # Random RGB values
         return model
     def randomize_color_of_multiple_bodies_with_single_geom(self, model, list_of_body_names):
         for body_name in list_of_body_names:
@@ -21,8 +24,9 @@ class Enviornment_Randomizer:
             model = self.randomize_color_of_single_geom(model, first_geom_name)
         return model
     def randomize_color_of_multiple_geoms(self, model, list_of_geom_names):
+        shared_color = self.rng.random(3)
         for geom_name in list_of_geom_names:
-            model = self.randomize_color_of_single_geom(model, geom_name)
+            model.geom(geom_name).rgba[:3] = shared_color
         return model
     def randomize_color_of_multiple_bodies_with_multiple_geom(self, model, list_of_body_names):
         for body_name in list_of_body_names:
@@ -33,9 +37,9 @@ class Enviornment_Randomizer:
     #Not used
     def randomize_plate_color(self, model, plate_geom_name):
         # Sample one shade ranging from white to light yellow.
-        brightness = np.random.uniform(0.85, 1.0)
-        green_offset = np.random.uniform(0.0, 0.04)
-        blue_offset = np.random.uniform(green_offset, 0.30)
+        brightness = self.rng.uniform(0.85, 1.0)
+        green_offset = self.rng.uniform(0.0, 0.04)
+        blue_offset = self.rng.uniform(green_offset, 0.30)
         plate_color = np.array([
             brightness,
             brightness - green_offset,
@@ -66,9 +70,8 @@ class Enviornment_Randomizer:
             )
 
         number_of_objects_initilized = 0
-        rng = np.random.default_rng()
         while True:
-            random_number = rng.random()
+            random_number = self.rng.random()
             if (
                 random_number < 0.5
                 and number_of_objects_initilized >= min_objects
@@ -83,7 +86,7 @@ class Enviornment_Randomizer:
                 if size <= 1:
                     object_index = 0
                 else:
-                    object_index = rng.integers(0, size)
+                    object_index = self.rng.integers(0, size)
 
                 name_of_object = str(
                     list_of_food_object_names[object_index]
@@ -136,7 +139,6 @@ class Enviornment_Randomizer:
                 )
             validated_ranges[primitive_name] = bounds
 
-        rng = np.random.default_rng()
         processed_geom_ids = set()
 
         for body_name in list_of_food_body_names:
@@ -157,17 +159,16 @@ class Enviornment_Randomizer:
                         bounds = validated_ranges[primitive_name]
                         model.geom_size[
                             geom_id, :number_of_size_components
-                        ] = rng.uniform(bounds[:, 0], bounds[:, 1])
+                        ] = self.rng.uniform(bounds[:, 0], bounds[:, 1])
                         break
 
         return model
     """ROTATION RANDOMIZATION"""
     def randomize_rotation(self,model, object_list):
-        rng = np.random.default_rng()
         #assume bodies are sent in
         for body in object_list:
             #we only need rotation across z_axis
-            angle = rng.uniform(-np.pi,np.pi)
+            angle = self.rng.uniform(-np.pi,np.pi)
             #quaternion rotation
             model.body(body).quat[:]= [
                 np.cos(angle/2),
@@ -185,8 +186,7 @@ class Enviornment_Randomizer:
             raise ValueError("chance_of_rotation must be between 0 and 1")
 
         radian_limit = degree_limit * np.pi/180
-        rng = np.random.default_rng()
-        random_number = rng.random()
+        random_number = self.rng.random()
         isRotation = False
         if random_number < chance_of_rotation:
             isRotation = True
@@ -201,8 +201,8 @@ class Enviornment_Randomizer:
         camera.quat[:] = original_quaternion
 
         if isRotation:
-            axis_determiner = rng.random()
-            rotation_amount = rng.uniform(-radian_limit, radian_limit)
+            axis_determiner = self.rng.random()
+            rotation_amount = self.rng.uniform(-radian_limit, radian_limit)
             half_rotation = rotation_amount / 2
             if axis_determiner<0.33:
                 #x axis rotation
@@ -250,13 +250,13 @@ class Enviornment_Randomizer:
         plate_body_name="plate",
         clearance=0.005,
         max_attempts=5000,
+        out_of_scene_z_cord=-0.18,
     ):
         # pass in the body names
         plate_center = model.body(plate_body_name).pos[:2]
         plate_height = model.body(plate_body_name).pos[2]
         data = mujoco.MjData(model)
         placed_food_object_names = []
-
         for object_name in list_of_food_object_names:
             object_name = str(object_name)
             Passed = False
@@ -280,15 +280,14 @@ class Enviornment_Randomizer:
                     f"Body '{object_name}' is too large for the plate"
                 )
 
-            original_position = model.body(object_name).pos.copy()
             while not Passed and attempts < max_attempts:
                 attempts += 1
 
                 # random offsets within the allowable range
-                random_x_offset = np.random.uniform(
+                random_x_offset = self.rng.uniform(
                     -1 * max_x_offset, max_x_offset
                 )
-                random_y_offset = np.random.uniform(
+                random_y_offset = self.rng.uniform(
                     -1 * max_y_offset, max_y_offset
                 )
 
@@ -310,11 +309,8 @@ class Enviornment_Randomizer:
                     Passed = True
 
             if not Passed:
-                model.body(object_name).pos[:] = original_position
-                raise RuntimeError(
-                    f"Could not place '{object_name}' without overlap after "
-                    f"{max_attempts} attempts"
-                )
+                model.body(object_name).pos[2] = out_of_scene_z_cord
+                continue
 
             placed_food_object_names.append(object_name)
 
@@ -334,7 +330,7 @@ class Enviornment_Randomizer:
         if np.any(offset_bounds[:, 0] > offset_bounds[:, 1]):
             raise ValueError("Each lower bound must be less than or equal to its upper bound")
 
-        random_offsets = np.random.uniform(
+        random_offsets = self.rng.uniform(
             offset_bounds[:, 0], offset_bounds[:, 1]
         )
         new_pos = original_position + random_offsets
@@ -343,8 +339,6 @@ class Enviornment_Randomizer:
 
     """LIGHTING"""
     def randomize_lighting(self, model, min_number_of_lights, max_number_of_lights, x_offset_range, y_offset_range, z_offset_range):
-        rng = np.random.default_rng()
-
         # Keep the total scene illumination stable as the number of active
         # lights changes. Diffuse is the main light, ambient is low fill,
         # and specular adds only moderate highlights.
@@ -363,21 +357,21 @@ class Enviornment_Randomizer:
 
 
         #number of lights being created
-        number_of_active_lights = rng.integers(min_number_of_lights, max_number_of_lights+1)
+        number_of_active_lights = self.rng.integers(min_number_of_lights, max_number_of_lights+1)
         if x_offset_range.size != 2 or y_offset_range.size != 2 or z_offset_range.size != 2:
             return None
 
         if number_of_active_lights > 0:
-            light_weights = rng.dirichlet(
+            light_weights = self.rng.dirichlet(
                 np.ones(number_of_active_lights)
             )
-            total_diffuse = rng.uniform(
+            total_diffuse = self.rng.uniform(
                 min_total_diffuse, max_total_diffuse
             )
-            total_ambient = rng.uniform(
+            total_ambient = self.rng.uniform(
                 min_total_ambient, max_total_ambient
             )
-            total_specular = rng.uniform(
+            total_specular = self.rng.uniform(
                 min_total_specular, max_total_specular
             )
         else:
@@ -385,9 +379,9 @@ class Enviornment_Randomizer:
 
         number_of_lights_changed = 0
         for i in range(number_of_active_lights):
-            x_pos = rng.uniform(x_offset_range[0], x_offset_range[1])
-            y_pos = rng.uniform(y_offset_range[0], y_offset_range[1])
-            z_pos = rng.uniform(z_offset_range[0], z_offset_range[1])
+            x_pos = self.rng.uniform(x_offset_range[0], x_offset_range[1])
+            y_pos = self.rng.uniform(y_offset_range[0], y_offset_range[1])
+            z_pos = self.rng.uniform(z_offset_range[0], z_offset_range[1])
             new_camera_pos = [x_pos, y_pos, z_pos]
             light = model.light(i)
             light.active[0] = 1
@@ -396,7 +390,7 @@ class Enviornment_Randomizer:
 
             # A single physical light uses the same slight RGB tint for its
             # diffuse, ambient, and specular contributions.
-            color_tint = rng.uniform(
+            color_tint = self.rng.uniform(
                 min_color_tint, max_color_tint, size=3
             )
             color_tint /= np.max(color_tint)
@@ -616,8 +610,9 @@ class Enviornment_Randomizer:
                     )
 
         return model
-
+    def update_seed(self, seed):
+        self.seed = seed
+        self.rng = np.random.default_rng(seed)
     # def scale_to_2d(self,model, body_names, depth:float):
     #     for body in body_names:
     #         for geom_id in self.get_geom_ids_in_body(body):
-

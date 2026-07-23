@@ -68,7 +68,8 @@ class Randomization_Constants:
         self.object_clearance = 0.005
         self.position_max_attempts = 5000
 
-        self.visibility_plate_geom_name = "1base_plate_geom"
+        self.plate_edge = "1base_plate_geom"
+        self.visibility_plate_geom_name = "plate_visual_geom"
         self.minimum_color_distance = 0.30
         self.visibility_max_attempts = 100
 

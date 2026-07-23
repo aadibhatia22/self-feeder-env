@@ -15,7 +15,7 @@ class Enviornment:
     #     self.observation_height = observation_height
 
     def __init__(self, xml_file: str , Enviornment_Randomizer: Enviornment_Randomizer, Randomization_Constants: Randomization_Constants, 
-                 checking_height:float, Model_Constants: Model_Constants =None, suction_diameter_in_meters:float = 0.01): 
+                 checking_height:float, Model_Constants: Model_Constants =None, suction_diameter_in_meters:float = 0.01, starting_seed = 0):
         self.model = mujoco.MjModel.from_xml_path(xml_file)
         self.data = mujoco.MjData(self.model)
         self.Randomization_Constants = Randomization_Constants
@@ -23,6 +23,7 @@ class Enviornment:
         self.checking_height = checking_height
         self.suction_diameter_in_meters = suction_diameter_in_meters
         self.Model_Constants = Model_Constants
+        self.seed = starting_seed
 
         #renderer
         self.renderer = None
@@ -32,11 +33,13 @@ class Enviornment:
     """MAIN FLOW"""
 
     #create scenes and domain randomizes and calls camera matrix helper method
-    def new_scene(self):
+    def new_scene(self, seed):
         # Do all the randomizations
         constants = self.Randomization_Constants
         randomizer = self.Enviornment_Randomizer
-
+        #update seed
+        self.seed = seed
+        randomizer.update_seed(self.seed)
         self.model = randomizer.randomize_color_of_single_geom(
             model=self.model,
             geom_name=constants.single_color_geom_name,
@@ -80,6 +83,7 @@ class Enviornment:
             plate_body_name=constants.plate_body_name,
             clearance=constants.object_clearance,
             max_attempts=constants.position_max_attempts,
+            out_of_scene_z_cord=constants.out_of_scene_z_coordinate,
         )
         self.model, self.data = randomizer.reset(
             model=self.model,
@@ -98,6 +102,13 @@ class Enviornment:
         self.model = randomizer.randomize_color_of_multiple_bodies_with_multiple_geom(
             model=self.model,
             list_of_body_names=constants.multiple_geom_color_body_names,
+        )
+        self.model = randomizer.randomize_color_of_multiple_geoms(
+            model=self.model,
+            list_of_geom_names=[
+                constants.plate_edge,
+                constants.visibility_plate_geom_name,
+            ],
         )
         self.model, self.data = randomizer.reset(
             model=self.model,
