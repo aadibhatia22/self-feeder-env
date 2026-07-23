@@ -24,6 +24,10 @@ class Enviornment:
         self.suction_diameter_in_meters = suction_diameter_in_meters
         self.Model_Constants = Model_Constants
     #RETURNS new data and model after applying randomizaion
+
+    """MAIN FLOW"""
+
+    #create scenes and domain randomizes and calls camera matrix helper method
     def new_scene(self):
         # Do all the randomizations
         constants = self.Randomization_Constants
@@ -142,31 +146,34 @@ class Enviornment:
             data=self.data,
         )
 
+        self.calculate_camera_matrix()
         return self.model, self.data
 
-
+    #the camera output given to the model
     def observation():
         return -1
     
     
-    
-    def step(self, x_cord_pred:float, y_cord_pred:float):
-        reward = self.reward(x_cord_pred, y_cord_pred)
-        #If object detected
-        if self.current_overlap_body:
-            self.remove_object(self.current_overlap_body)
-        #DO A FORWARD
-        self.current_overlap_body = None
-        return -1
+
+    #provides the "training correct answer" so that the model class can handel training
+    def get_target_heatmap(self):
+        food_geom_centers_worldc = self.get_optimal_positions()
+        target_heatmap = self.create_heatmap(sigma=self.Model_Constants.sigma,world_cord_object_centers_xy=food_geom_centers_worldc)
+        return target_heatmap
+
+        
     
 
     def update(self):
         self.model, self.data = Enviornment_Randomizer.reset()
+        return -1
 
 
 
 
     """Transformation methods"""
+
+    #THIS IS ONLY FOR OBJECTS AND INFERS Z is THE HIGHEST POINT IN SURFACE FROM OBJECT CENTER TO SURFACE"
 
     def world_to_pixel(self, x_cord:float, y_cord:float) -> tuple[float, float]:
        #we need the z cord since different z_cord's give differnet pixels
@@ -218,10 +225,7 @@ class Enviornment:
         return zstart + distance
 
 
-    def remove_object(self,body_name:str):
-        self.model.body(body_name).pos = np.array([self.model.body(body_name).pos[0], self.model.body(body_name).pos[1], self.Randomization_Constants.out_of_scene_z_coordinate])
-        self.mujoco.mj_forward(self.model, self.data)
-
+    
     
     """CAMERA METHODS"""
 
@@ -293,11 +297,42 @@ class Enviornment:
         return self.camera_matrix
 
 
+    """FINDING OBJECT CENTERS"""
+    def get_optimal_positions(self) -> np.ndarray:
+        position_list = []
+        mujoco.mj_forward(self.model, self.data)
 
+        for body_name in self.Randomization_Constants.all_food_body_names:
+            geom_ids = self.Enviornment_Randomizer.get_geom_ids_in_body(self.model, body_name)
+            for geom_id in geom_ids:
+                optimal_point = self.data.geom_xpos[geom_id].copy()
+                if optimal_point[2] < 0:
+                    continue
+                position_list.append(optimal_point)
+        return np.asarray(position_list, dtype=float).reshape(-1, 3)
 
 
     """HEATMAP"""
-    def create_heatmap(self, sigma: float, object_centers:np.ndarray)->np.ndarray:
+    def create_heatmap(self, sigma: float, world_cord_object_centers_xy:np.ndarray)->np.ndarray:
+        camera_id = self.model.camera(self.Randomization_Constants.camera_name).id
+        width, height = self.model.cam_resolution[camera_id]
+        transformed_pixel_object_centers_xy = []
+        #transform_world_cord to pixel cordinates
+        for entry in world_cord_object_centers_xy:
+            x_cord = entry[0]
+            y_cord = entry[1]
+            #transforming to heatmaps dim
+            pixel_x, pixel_y = self.world_to_pixel(x_cord,y_cord)
+            #checking for failed projections
+            if (pixel_x < 0 or pixel_y < 0 or pixel_x >= width or pixel_y >= height):
+                continue
+
+
+            pixel_x = pixel_x *  self.Model_Constants.output_x_dim / width
+            pixel_y = pixel_y * self.Model_Constants.output_y_dim / height
+
+            transformed_pixel_object_centers_xy.append([pixel_x, pixel_y])
+
         #o grid for spatial cordination
         shape = [self.Model_Constants.output_y_dim, self.Model_Constants.output_x_dim]
         h, w = shape
@@ -305,7 +340,9 @@ class Enviornment:
         # an empty map filled with zeros
         global_reward_map = np.zeros(shape)
         #gausian logic
-        for cy, cx in object_centers:
+        for entry in transformed_pixel_object_centers_xy:
+            cx = entry[0]
+            cy = entry[1]
             # Calculate Gaussian for this specific object
             dist_sq = (x - cx)**2 + (y - cy)**2
             obj_reward = self.Model_Constants.max_reward * np.exp(-dist_sq / (2 * sigma**2))
@@ -392,4 +429,9 @@ class Enviornment:
     def reward(x_cord_pred: float, y_cord_pred: float) -> float:
             
             return -1
+
+    def remove_object(self,body_name:str):
+            self.model.body(body_name).pos = np.array([self.model.body(body_name).pos[0], self.model.body(body_name).pos[1], self.Randomization_Constants.out_of_scene_z_coordinate])
+            self.mujoco.mj_forward(self.model, self.data)
+    
     """
