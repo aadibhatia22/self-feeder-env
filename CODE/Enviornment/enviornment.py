@@ -1,8 +1,12 @@
 import mujoco
 import numpy as np
+
 from enviornment_randomizer import Enviornment_Randomizer
 from randomization_constants import Randomization_Constants
-from model_constants import Model_Constants
+
+from Model.model_constants import Model_Constants
+
+
 class Enviornment:
 
     # def __init__(self, food_object_list, xml_file, enviornment_randomizer, camera_name,
