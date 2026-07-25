@@ -85,6 +85,10 @@ if __name__ =="__main__":
     )
     writer = SummaryWriter(log_dir)
 
+    loss_list = []
+
+    lowest_loss = load_lowest_avg_loss_20()
+
     while current_iteration < total_training_iterations:
         curr_seed = load_last_seed() + 1
         current_iteration = load_number_of_iterations()+1
@@ -113,6 +117,23 @@ if __name__ =="__main__":
         #trains and returns loss
         loss = model.train_step(prediction=model_input, ground_truth=ground_truth,N = number_of_objects)
 
+        #adding the loss to the loss_list
+        loss_list.append(loss)
+
+        #saves model every 10
+        if current_iteration % 10:
+            print(f"SAVING MODEL AT ITERATION: {current_iteration}")
+            model.save_checkpoint('/tmp/UNET_MODEL_BASE')
+            average_loss = average_loss = sum(loss_list)/20.0
+            print(f"LAST LOSS AVG: {average_loss}")
 
         save_last_seed(curr_seed)
         save_number_of_iterations(current_iteration)
+
+        if len(loss_list) == 20:
+            average_loss = sum(loss_list)/20.0
+            if average_loss < lowest_loss:
+                 save_lowest_avg_loss_20(average_loss)
+                 lowest_loss = average_loss
+            del loss_list[0]
+            
