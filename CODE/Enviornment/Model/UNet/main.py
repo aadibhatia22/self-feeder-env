@@ -2,6 +2,8 @@ import time
 import os
 import mujoco
 import numpy as np
+import torch
+import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 from unet import UNet
 from model_constants import Model_Constants
@@ -34,18 +36,35 @@ def save_number_of_iterations(number_of_iterations):
     NUMBER_OF_ITERATIONS_FILE.write_text(str(number_of_iterations))
     print(f'Saved Seed as: {NUMBER_OF_ITERATIONS_FILE} in {NUMBER_OF_ITERATIONS_FILE}')
 
+"""CODE TO IMPORT LOWEST AVERAGE LOSS OVER 20 ITERATIONS"""
+LOWEST_AVG_LOSS_20_FILE = Path(__file__).with_name("lowest_avg_loss_20.txt")
+
+
+def load_lowest_avg_loss_20():
+    if not LOWEST_AVG_LOSS_20_FILE.exists():
+        raise RuntimeError("LOWEST_AVG_LOSS_20_FILE NOT FOUND")
+
+    return float(LOWEST_AVG_LOSS_20_FILE.read_text().strip())
+
+
+def save_lowest_avg_loss_20(lowest_avg_loss_20):
+    LOWEST_AVG_LOSS_20_FILE.write_text(str(lowest_avg_loss_20))
+    print(
+        f"Saved lowest average loss over 20 iterations as: "
+        f"{lowest_avg_loss_20} in {LOWEST_AVG_LOSS_20_FILE}"
+    )
 
 
 
 def make_env():
     #seed set to none
     last_seed = load_last_seed()
-    Enviornment_Randomizer = Enviornment_Randomizer()
-    Randomization_Constants = Randomization_Constants()
-    Model_Constants = Model_Constants()
+    enviornment_randomizer = Enviornment_Randomizer()
+    randomization_constants = Randomization_Constants()
+    model_constants = Model_Constants()
 
-    env = Enviornment(xml_file="../xml_models/world.xml", Enviornment_Randomizer=Enviornment_Randomizer,
-                      Randomization_Constants=Randomization_Constants, Model_Constants = Model_Constants,starting_seed=last_seed + 1
+    env = Enviornment(xml_file="../xml_models/world.xml", Enviornment_Randomizer=enviornment_randomizer,
+                      Randomization_Constants=randomization_constants, Model_Constants=model_constants, starting_seed=last_seed + 1
                       )
     return env
 
@@ -53,17 +72,41 @@ def make_env():
 
 if __name__ =="__main__":
     env = make_env()
-    model = UNet(in_channels=3, num_classes=1, checkpoint_dir="tmp/UNet_MODEL_BASE", learning_rate=Model_Constants.learning_rate)
+    model = UNet(in_channels=3, num_classes=1, checkpoint_dir="tmp/UNet_MODEL_BASE", learning_rate=env.Model_Constants.learning_rate)
 
     total_training_iterations = 20000
     current_iteration = load_number_of_iterations()
-
+    curr_seed = load_last_seed()
     """TENSORBOARD CONFIG"""
     run_id = time.strftime("%Y%m%d-%H%M%S")
     log_dir = os.path.join(
         "logs",
-        f"UNet_{run_id}_lr_{Model_Constants.learning_rate}_output_xy_{Model_Constants.output_x_dim}_{Model_Constants.output_y_dim}_MaxReward_{Model_Constants.max_reward}_Sigma_{Model_Constants.sigma}",
+        f"UNet_{run_id}_lr_{env.Model_Constants.learning_rate}_output_xy_{env.Model_Constants.output_x_dim}_{env.Model_Constants.output_y_dim}_MaxReward_{env.Model_Constants.max_reward}_Sigma_{env.Model_Constants.sigma}",
     )
     writer = SummaryWriter(log_dir)
 
-    
+    while current_iteration < total_training_iterations:
+        curr_seed = load_last_seed() + 1
+        current_iteration = load_number_of_iterations()+1
+        env.update()
+        env.new_scene(seed=curr_seed)
+        #currently in height x width x rgb = (1080, 1920, 3)
+        model_input = env.observation()
+        # y first because rows are y axis
+        # resize to (1, 3, y_input_dim, x_input_dim) -> (batchsize, # channels, # rows, # columns)
+        model_input = torch.from_numpy(model_input).permute(2, 0, 1).unsqueeze(0).float()
+        model_input = model_input / 255.0
+        model_input = F.interpolate(
+            model_input,
+            size=(
+                env.Model_Constants.input_y_dim,
+                env.Model_Constants.input_x_dim,
+            ),
+            mode="bilinear",
+            align_corners=False,
+        )
+        model_input = model_input.to(model.device)
+
+
+        save_last_seed(curr_seed)
+        save_number_of_iterations(current_iteration)
