@@ -35,6 +35,8 @@ def save_number_of_iterations(number_of_iterations):
     print(f'Saved Seed as: {NUMBER_OF_ITERATIONS_FILE} in {NUMBER_OF_ITERATIONS_FILE}')
 
 
+
+
 def make_env():
     #seed set to none
     last_seed = load_last_seed()
@@ -51,3 +53,17 @@ def make_env():
 
 if __name__ =="__main__":
     env = make_env()
+    model = UNet(in_channels=3, num_classes=1, checkpoint_dir="tmp/UNet_MODEL_BASE", learning_rate=Model_Constants.learning_rate)
+
+    total_training_iterations = 20000
+    current_iteration = load_number_of_iterations()
+
+    """TENSORBOARD CONFIG"""
+    run_id = time.strftime("%Y%m%d-%H%M%S")
+    log_dir = os.path.join(
+        "logs",
+        f"UNet_{run_id}_lr_{Model_Constants.learning_rate}_output_xy_{Model_Constants.output_x_dim}_{Model_Constants.output_y_dim}_MaxReward_{Model_Constants.max_reward}_Sigma_{Model_Constants.sigma}",
+    )
+    writer = SummaryWriter(log_dir)
+
+    
