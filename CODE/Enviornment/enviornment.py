@@ -19,13 +19,11 @@ class Enviornment:
     #     self.observation_height = observation_height
 
     def __init__(self, xml_file: str , Enviornment_Randomizer: Enviornment_Randomizer, Randomization_Constants: Randomization_Constants, 
-                 checking_height:float, Model_Constants: Model_Constants =None, suction_diameter_in_meters:float = 0.01, starting_seed = 0):
+                Model_Constants: Model_Constants =None, starting_seed = 0):
         self.model = mujoco.MjModel.from_xml_path(xml_file)
         self.data = mujoco.MjData(self.model)
         self.Randomization_Constants = Randomization_Constants
         self.Enviornment_Randomizer = Enviornment_Randomizer
-        self.checking_height = checking_height
-        self.suction_diameter_in_meters = suction_diameter_in_meters
         self.Model_Constants = Model_Constants
         self.seed = starting_seed
 
