@@ -14,12 +14,11 @@ class DoubleConv(nn.Module):
             #number of chanells as paramters
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
-
-            """without padding the dimensions would shrink ex form 284^2 it 282^2 since Kernels take 1 pixel off from each side"""
         )
+        #without padding the dimensions would shrink ex form 284^2 it 282^2 since Kernels take 1 pixel off from each side
 
-        def forward(self, input):
-            return self.conv_op(input)
+    def forward(self, input):
+        return self.conv_op(input)
 
 """Creating the DownSample Class"""   
 #Downsampling takes channels from previous layers and the reduces its dimensions
@@ -41,3 +40,15 @@ class DownSample(nn.Module):
         down = self.conv(input)
         p = self.pool(down)
         return down, p 
+
+
+
+class UpSample(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.up = nn.ConvTranspose2d(in_channels, in_channels//2, kernel_size=2, stride=2)
+        self.conv = DoubleConv(in_channels, out_channels)
+    def forward(self, x1, x2):
+        x1 = self.up(x1)
+        x = torch.cat([x1,x2], 1)
+        return self.conv(x)

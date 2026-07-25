@@ -374,8 +374,12 @@ class Enviornment:
         global_reward_map = np.zeros(shape)
         #gausian logic
         for entry in transformed_pixel_object_centers_xy:
-            cx = entry[0]
-            cy = entry[1]
+            # CenterNet-style focal loss requires one exact 1.0 center pixel.
+            # Sub-pixel precision can be recovered later with an offset head.
+            cx = int(round(entry[0]))
+            cy = int(round(entry[1]))
+            cx = min(max(cx, 0), w - 1)
+            cy = min(max(cy, 0), h - 1)
             # Calculate Gaussian for this specific object
             dist_sq = (x - cx)**2 + (y - cy)**2
             obj_reward = self.Model_Constants.max_reward * np.exp(-dist_sq / (2 * sigma**2))
