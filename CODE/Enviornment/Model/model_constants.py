@@ -9,3 +9,4 @@ class Model_Constants:
         self.output_y_dim = 144
         self.max_reward = 1
         self.sigma = 2
+        self.learning_rate=10e-3
