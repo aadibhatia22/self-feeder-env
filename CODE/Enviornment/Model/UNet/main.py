@@ -34,7 +34,7 @@ def load_number_of_iterations():
     
 def save_number_of_iterations(number_of_iterations):
     NUMBER_OF_ITERATIONS_FILE.write_text(str(number_of_iterations))
-    print(f'Saved Seed as: {NUMBER_OF_ITERATIONS_FILE} in {NUMBER_OF_ITERATIONS_FILE}')
+    print(f'Saved Num of Itr: {number_of_iterations} in {NUMBER_OF_ITERATIONS_FILE}')
 
 """CODE TO IMPORT LOWEST AVERAGE LOSS OVER 20 ITERATIONS"""
 LOWEST_AVG_LOSS_20_FILE = Path(__file__).with_name("lowest_avg_loss_20.txt")
@@ -106,6 +106,12 @@ if __name__ =="__main__":
             align_corners=False,
         )
         model_input = model_input.to(model.device)
+
+        model_output = model.forward(x = model_input)
+        ground_truth = env.get_target_heatmap()
+        number_of_objects = float(env.get_number_of_active_food_objects)
+        #trains and returns loss
+        loss = model.train_step(prediction=model_input, ground_truth=ground_truth,N = number_of_objects)
 
 
         save_last_seed(curr_seed)

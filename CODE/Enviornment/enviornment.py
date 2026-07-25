@@ -329,6 +329,24 @@ class Enviornment:
 
 
     """FINDING OBJECT CENTERS"""
+    def get_number_of_active_food_objects(self) -> int:
+        number_of_active_food_objects = 0
+        mujoco.mj_forward(self.model, self.data)
+
+        for body_name in self.Randomization_Constants.all_food_body_names:
+            geom_ids = self.Enviornment_Randomizer.get_geom_ids_in_body(
+                self.model,
+                body_name,
+            )
+            for geom_id in geom_ids:
+                geom_z_coordinate = self.data.geom_xpos[geom_id][2]
+                if geom_z_coordinate >= 0:
+                    number_of_active_food_objects += 1
+                    break
+
+        return number_of_active_food_objects
+
+
     def get_optimal_positions(self) -> np.ndarray:
         position_list = []
         mujoco.mj_forward(self.model, self.data)

@@ -96,6 +96,25 @@ class UNet(nn.Module):
         #computing the 1/N part of the formula
         normalizer = max(float(N), 1.0)
         return 1.0/normalizer * loss
+
+    def train_step(self, prediction, ground_truth, N, alpha = None, beta = None):
+        # 1. Clear gradients
+        self.optimizer.zero_grad()
+        
+        # 2. Compute loss
+        loss = -1
+        if alpha is not None and beta is not None:
+            loss = self.heat_map_loss(prediction= prediction, ground_truth= ground_truth, N = N, alpha= alpha, beta= beta)
+        else:
+            loss = self.heat_map_loss(prediction= prediction, ground_truth= ground_truth, N = N)
+        
+        # 3. Backpropagate (This attaches gradients to the model parameters)
+        loss.backward()
+        
+        # 4. Update the weights
+        self.optimizer.step()
+        
+        return loss.item() # Returns the raw number for logging
         
 
 if __name__ == "__main__":
