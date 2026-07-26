@@ -19,13 +19,11 @@ class Enviornment:
     #     self.observation_height = observation_height
 
     def __init__(self, xml_file: str , Enviornment_Randomizer: Enviornment_Randomizer, Randomization_Constants: Randomization_Constants, 
-                 checking_height:float, Model_Constants: Model_Constants =None, suction_diameter_in_meters:float = 0.01, starting_seed = 0):
+                Model_Constants: Model_Constants =None, starting_seed = 0):
         self.model = mujoco.MjModel.from_xml_path(xml_file)
         self.data = mujoco.MjData(self.model)
         self.Randomization_Constants = Randomization_Constants
         self.Enviornment_Randomizer = Enviornment_Randomizer
-        self.checking_height = checking_height
-        self.suction_diameter_in_meters = suction_diameter_in_meters
         self.Model_Constants = Model_Constants
         self.seed = starting_seed
 
@@ -198,7 +196,10 @@ class Enviornment:
     
 
     def update(self):
-        self.model, self.data = Enviornment_Randomizer.reset()
+        self.model, self.data = self.Enviornment_Randomizer.reset(
+            model=self.model,
+            data=self.data,
+        )
         return -1
 
 
@@ -331,6 +332,24 @@ class Enviornment:
 
 
     """FINDING OBJECT CENTERS"""
+    def get_number_of_active_food_objects(self) -> int:
+        number_of_active_food_objects = 0
+        mujoco.mj_forward(self.model, self.data)
+
+        for body_name in self.Randomization_Constants.all_food_body_names:
+            geom_ids = self.Enviornment_Randomizer.get_geom_ids_in_body(
+                self.model,
+                body_name,
+            )
+            for geom_id in geom_ids:
+                geom_z_coordinate = self.data.geom_xpos[geom_id][2]
+                if geom_z_coordinate >= 0:
+                    number_of_active_food_objects += 1
+                    break
+
+        return number_of_active_food_objects
+
+
     def get_optimal_positions(self) -> np.ndarray:
         position_list = []
         mujoco.mj_forward(self.model, self.data)
@@ -374,8 +393,12 @@ class Enviornment:
         global_reward_map = np.zeros(shape)
         #gausian logic
         for entry in transformed_pixel_object_centers_xy:
-            cx = entry[0]
-            cy = entry[1]
+            # CenterNet-style focal loss requires one exact 1.0 center pixel.
+            # Sub-pixel precision can be recovered later with an offset head.
+            cx = int(round(entry[0]))
+            cy = int(round(entry[1]))
+            cx = min(max(cx, 0), w - 1)
+            cy = min(max(cy, 0), h - 1)
             # Calculate Gaussian for this specific object
             dist_sq = (x - cx)**2 + (y - cy)**2
             obj_reward = self.Model_Constants.max_reward * np.exp(-dist_sq / (2 * sigma**2))
