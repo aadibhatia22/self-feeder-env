@@ -196,7 +196,10 @@ class Enviornment:
     
 
     def update(self):
-        self.model, self.data = Enviornment_Randomizer.reset()
+        self.model, self.data = self.Enviornment_Randomizer.reset(
+            model=self.model,
+            data=self.data,
+        )
         return -1
 
 

@@ -5,16 +5,22 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
-from unet import UNet
-from model_constants import Model_Constants
+from Model.UNet.unet import UNet
+from Model.model_constants import Model_Constants
 from enviornment_randomizer import Enviornment_Randomizer
 from randomization_constants import Randomization_Constants
 from enviornment import Enviornment
 from pathlib import Path
 
 
+TMP_DIRECTORY = Path(__file__).parent / "tmp"
+CHECKPOINT_DIRECTORY = TMP_DIRECTORY / "UNet_MODEL_BASE"
+ENVIRONMENT_DIRECTORY = Path(__file__).resolve().parents[2]
+WORLD_XML_FILE = ENVIRONMENT_DIRECTORY / "xml_models" / "world.xml"
+
+
 """SOME CODE TO IMPORT MODEL SEED"""
-SEED_FILE = Path(__file__).with_name("last_seed.txt")
+SEED_FILE = TMP_DIRECTORY / "last_seed.txt"
 def load_last_seed():
     if not SEED_FILE.exists():
         raise RuntimeError("SEED_FILE NOT FOUND")
@@ -22,10 +28,10 @@ def load_last_seed():
 
 def save_last_seed(seed):
     SEED_FILE.write_text(str(seed))
-    print(f'Saved Seed as: {seed} in {SEED_FILE}')
+    # print(f'Saved Seed as: {seed} in {SEED_FILE}')
 
 """CODE TO IMPORT NUMBER OF TRAINING_ITERATIONS"""
-NUMBER_OF_ITERATIONS_FILE = Path(__file__).with_name("training_iterations.txt")
+NUMBER_OF_ITERATIONS_FILE = TMP_DIRECTORY / "training_iterations.txt"
 
 def load_number_of_iterations():
     if not NUMBER_OF_ITERATIONS_FILE.exists():
@@ -34,10 +40,10 @@ def load_number_of_iterations():
     
 def save_number_of_iterations(number_of_iterations):
     NUMBER_OF_ITERATIONS_FILE.write_text(str(number_of_iterations))
-    print(f'Saved Num of Itr: {number_of_iterations} in {NUMBER_OF_ITERATIONS_FILE}')
+    # print(f'Saved Num of Itr: {number_of_iterations} in {NUMBER_OF_ITERATIONS_FILE}')
 
 """CODE TO IMPORT LOWEST AVERAGE LOSS OVER 20 ITERATIONS"""
-LOWEST_AVG_LOSS_20_FILE = Path(__file__).with_name("lowest_avg_loss_20.txt")
+LOWEST_AVG_LOSS_20_FILE = TMP_DIRECTORY / "lowest_avg_loss_20.txt"
 
 
 def load_lowest_avg_loss_20():
@@ -63,7 +69,7 @@ def make_env():
     randomization_constants = Randomization_Constants()
     model_constants = Model_Constants()
 
-    env = Enviornment(xml_file="../xml_models/world.xml", Enviornment_Randomizer=enviornment_randomizer,
+    env = Enviornment(xml_file=str(WORLD_XML_FILE), Enviornment_Randomizer=enviornment_randomizer,
                       Randomization_Constants=randomization_constants, Model_Constants=model_constants, starting_seed=last_seed + 1
                       )
     return env
@@ -72,7 +78,13 @@ def make_env():
 
 if __name__ =="__main__":
     env = make_env()
-    model = UNet(in_channels=3, num_classes=1, checkpoint_dir="tmp/UNet_MODEL_BASE", learning_rate=env.Model_Constants.learning_rate)
+    model = UNet(in_channels=3, num_classes=1, checkpoint_dir=str(CHECKPOINT_DIRECTORY), learning_rate=env.Model_Constants.learning_rate)
+
+    goToSavedModel = False
+
+    if goToSavedModel:
+        model = model.load_checkpoint()
+
 
     total_training_iterations = 20000
     current_iteration = load_number_of_iterations()
@@ -113,17 +125,17 @@ if __name__ =="__main__":
 
         model_output = model.forward(x = model_input)
         ground_truth = env.get_target_heatmap()
-        number_of_objects = float(env.get_number_of_active_food_objects)
+        number_of_objects = float(env.get_number_of_active_food_objects())
         #trains and returns loss
-        loss = model.train_step(prediction=model_input, ground_truth=ground_truth,N = number_of_objects)
+        loss = model.train_step(prediction=model_output, ground_truth=ground_truth,N = number_of_objects)
 
         #adding the loss to the loss_list
         loss_list.append(loss)
 
-        #saves model every 10
-        if current_iteration % 10:
+        #saves model every 100 and overwrites the previous save
+        if current_iteration % 100 == 0:
             print(f"SAVING MODEL AT ITERATION: {current_iteration}")
-            model.save_checkpoint('/tmp/UNET_MODEL_BASE')
+            model.save_checkpoint()
             average_loss = average_loss = sum(loss_list)/20.0
             print(f"LAST LOSS AVG: {average_loss}")
 
@@ -136,4 +148,7 @@ if __name__ =="__main__":
                  save_lowest_avg_loss_20(average_loss)
                  lowest_loss = average_loss
             del loss_list[0]
+        #push the score to the tensorboard's logs for us to see
+        writer.add_scalar("Loss", loss, global_step=current_iteration)
+        writer.flush()
             

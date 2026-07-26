@@ -1,6 +1,7 @@
 import torch 
 import torch.nn as nn
-from unet_parts import DoubleConv, DownSample, UpSample
+import torch.nn.functional as F
+from Model.UNet.unet_parts import DoubleConv, DownSample, UpSample
 import os
 import torch.optim as optim
 class UNet(nn.Module):
@@ -22,10 +23,16 @@ class UNet(nn.Module):
         self.up_conv4 = UpSample(128,64)
 
         self.out = nn.Conv2d(in_channels=64, out_channels=num_classes, kernel_size=1)
+        # Start heatmap probabilities near 0.1 so background pixels do not
+        # overwhelm the first optimizer updates.
+        nn.init.constant_(self.out.bias, -2.19)
 
         self.checkpoint_dir = checkpoint_dir
         self.learning_rate = learning_rate
-        self.checkpoint_file = os.path.join(self.checkpoint_dir, 'UNet')
+        self.checkpoint_file = os.path.join(
+            self.checkpoint_dir,
+            "latest_UNet.pt",
+        )
 
 
         #to use apple GPU
@@ -58,20 +65,22 @@ class UNet(nn.Module):
     def save_checkpoint(self, checkpoint_dir=None):
         checkpoint_dir = checkpoint_dir or self.checkpoint_dir
         os.makedirs(checkpoint_dir, exist_ok=True)
-        checkpoint_file = os.path.join(checkpoint_dir, self.name+'_td3')
-        torch.save(self.state_dict(), checkpoint_file)
+        self.checkpoint_file = os.path.join(
+            checkpoint_dir,
+            "latest_UNet.pt",
+        )
+        torch.save(self.state_dict(), self.checkpoint_file)
 
     #this helps us go back to a checkpoint
     def load_checkpoint(self):
         self.load_state_dict(torch.load(self.checkpoint_file, map_location=self.device))
+        return self
 
     #alpha supresses easy pred
     #beta reduces punishment near the correct center
     def heat_map_loss(self, prediction, ground_truth, N, alpha = 2.0, beta = 4.0):
         #scale the predicition to be between 0-1
-        prediction = torch.sigmoid(prediction)
-        #keep logarithms away from log(0)
-        prediction = torch.clamp(prediction, min=1e-4, max=1.0-1e-4)
+        prediction_probability = torch.sigmoid(prediction)
 
         #ground truth heatmaps from the environment begin as NumPy arrays
         ground_truth = torch.as_tensor(
@@ -80,18 +89,33 @@ class UNet(nn.Module):
             dtype=prediction.dtype
         )
 
-        loss = prediction.new_tensor(0.0)
         #applying (1 - prediction(x))^a * log(prediction(x)) for ground_truth = 1
         # else (1-ground_truth(x))^b * prediction ^a log(1-prediction(x))
+        positive_pixels = ground_truth == 1
+        negative_pixels = (ground_truth < 1) & (ground_truth >= 0)
 
-        for i in range(prediction.shape[0]):
-            for j in range(prediction.shape[1]):
-                ground_truth_value = ground_truth[i][j]
-                prediction_value = prediction[i][j]
-                if ground_truth_value == 1:
-                    loss -= ((1-prediction_value) ** alpha) * torch.log(prediction_value)
-                elif ground_truth_value < 1 and ground_truth_value >= 0:
-                    loss -= ((1-ground_truth_value) ** beta) * (prediction_value ** alpha) * torch.log(1-prediction_value)
+        positive_loss = (
+            ((1 - prediction_probability) ** alpha)
+            * F.logsigmoid(prediction)
+        )
+        negative_loss = (
+            ((1 - ground_truth) ** beta)
+            * (prediction_probability ** alpha)
+            * F.logsigmoid(-prediction)
+        )
+
+        loss = -(
+            torch.where(
+                positive_pixels,
+                positive_loss,
+                torch.zeros_like(positive_loss),
+            ).sum()
+            + torch.where(
+                negative_pixels,
+                negative_loss,
+                torch.zeros_like(negative_loss),
+            ).sum()
+        )
         
         #computing the 1/N part of the formula
         normalizer = max(float(N), 1.0)
@@ -100,6 +124,10 @@ class UNet(nn.Module):
     def train_step(self, prediction, ground_truth, N, alpha = None, beta = None):
         # 1. Clear gradients
         self.optimizer.zero_grad()
+
+        #prediction comes from UNet as (1, 1, H, W)
+        #remove the batch and channel dimensions to match ground_truth (H, W)
+        prediction = prediction.squeeze(0).squeeze(0)
         
         # 2. Compute loss
         loss = -1
