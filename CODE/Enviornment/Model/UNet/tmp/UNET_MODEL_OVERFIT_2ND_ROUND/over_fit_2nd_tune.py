@@ -6,16 +6,16 @@ import torch
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 from Model.UNet.unet import UNet
-from Model.model_constants import Model_Constants
+from Model.UNet.tmp.UNET_MODEL_OVERFIT_2ND_ROUND.UNetV2Constants import UNetV2Constants
 from enviornment_randomizer import Enviornment_Randomizer
 from randomization_constants import Randomization_Constants
 from enviornment import Enviornment
 from pathlib import Path
 
 
-TMP_DIRECTORY = Path(__file__).parent / "tmp"
-CHECKPOINT_DIRECTORY = TMP_DIRECTORY / "UNET_MODEL_OVERFIT"
-ENVIRONMENT_DIRECTORY = Path(__file__).resolve().parents[2]
+CHECKPOINT_DIRECTORY = Path(__file__).resolve().parent
+TMP_DIRECTORY = CHECKPOINT_DIRECTORY.parent
+ENVIRONMENT_DIRECTORY = CHECKPOINT_DIRECTORY.parents[3]
 WORLD_XML_FILE = ENVIRONMENT_DIRECTORY / "xml_models" / "world.xml"
 
 
@@ -43,12 +43,16 @@ WORLD_XML_FILE = ENVIRONMENT_DIRECTORY / "xml_models" / "world.xml"
 #     # print(f'Saved Num of Itr: {number_of_iterations} in {NUMBER_OF_ITERATIONS_FILE}')
 
 """CODE TO IMPORT LOWEST AVERAGE LOSS OVER 20 ITERATIONS"""
-LOWEST_AVG_LOSS_20_FILE = TMP_DIRECTORY / "lowest_avg_loss_overfit_20.txt"
+LOWEST_AVG_LOSS_20_FILE = CHECKPOINT_DIRECTORY / "lowest_avg_loss_20.txt"
+CURRENT_ITERATION_FILE = CHECKPOINT_DIRECTORY / "current_iteration.txt"
+TENSORBOARD_RUN_NAME_FILE = CHECKPOINT_DIRECTORY / "tensorboard_run_name.txt"
+TENSORBOARD_ROOT_DIRECTORY = ENVIRONMENT_DIRECTORY / "logs" / "overfit_256"
 
 
 def load_lowest_avg_loss_20():
     if not LOWEST_AVG_LOSS_20_FILE.exists():
-        raise RuntimeError("LOWEST_AVG_LOSS_20_FILE NOT FOUND")
+        LOWEST_AVG_LOSS_20_FILE.parent.mkdir(parents=True, exist_ok=True)
+        LOWEST_AVG_LOSS_20_FILE.write_text(str(float("inf")))
 
     return float(LOWEST_AVG_LOSS_20_FILE.read_text().strip())
 
@@ -59,6 +63,33 @@ def save_lowest_avg_loss_20(lowest_avg_loss_20):
         f"Saved lowest average loss over 20 iterations as: "
         f"{lowest_avg_loss_20} in {LOWEST_AVG_LOSS_20_FILE}"
     )
+
+
+def load_current_iteration():
+    if not CURRENT_ITERATION_FILE.exists():
+        CURRENT_ITERATION_FILE.write_text("0")
+
+    return int(CURRENT_ITERATION_FILE.read_text().strip())
+
+
+def save_current_iteration(current_iteration):
+    CURRENT_ITERATION_FILE.write_text(str(current_iteration))
+
+
+def load_or_create_tensorboard_log_directory(model_constants):
+    if TENSORBOARD_RUN_NAME_FILE.exists():
+        run_name = TENSORBOARD_RUN_NAME_FILE.read_text().strip()
+        if run_name:
+            return TENSORBOARD_ROOT_DIRECTORY / run_name
+
+    run_id = time.strftime("%Y%m%d-%H%M%S")
+    run_name = (
+        f"UNet_{run_id}_lr_{model_constants.learning_rate}_"
+        f"output_xy_{model_constants.output_x_dim}_{model_constants.output_y_dim}_"
+        f"MaxReward_{model_constants.max_reward}_Sigma_{model_constants.sigma}"
+    )
+    TENSORBOARD_RUN_NAME_FILE.write_text(run_name)
+    return TENSORBOARD_ROOT_DIRECTORY / run_name
 
 
 def get_localization_metrics(prediction, ground_truth):
@@ -93,10 +124,10 @@ def get_localization_metrics(prediction, ground_truth):
 
 def make_env():
     #seed set to none
-    seed = np.random.randint(0,32)
+    seed = np.random.randint(0,256)
     enviornment_randomizer = Enviornment_Randomizer()
     randomization_constants = Randomization_Constants()
-    model_constants = Model_Constants()
+    model_constants = UNetV2Constants()
 
     env = Enviornment(xml_file=str(WORLD_XML_FILE), Enviornment_Randomizer=enviornment_randomizer,
                       Randomization_Constants=randomization_constants, Model_Constants=model_constants, starting_seed=seed
@@ -109,22 +140,23 @@ if __name__ =="__main__":
     env = make_env()
     model = UNet(in_channels=3, num_classes=1, checkpoint_dir=str(CHECKPOINT_DIRECTORY), learning_rate=env.Model_Constants.learning_rate)
 
-    goToSavedModel = False
+    goToSavedModel = True
 
     if goToSavedModel:
         model = model.load_checkpoint()
 
 
     total_training_iterations = 20000
-    current_iteration = 0
+    current_iteration = load_current_iteration()
     """TENSORBOARD CONFIG"""
-    run_id = time.strftime("%Y%m%d-%H%M%S")
-    log_dir = os.path.join(
-        "logs",
-        "overfit_32",
-        f"UNet_{run_id}_lr_{env.Model_Constants.learning_rate}_output_xy_{env.Model_Constants.output_x_dim}_{env.Model_Constants.output_y_dim}_MaxReward_{env.Model_Constants.max_reward}_Sigma_{env.Model_Constants.sigma}",
+    log_dir = load_or_create_tensorboard_log_directory(env.Model_Constants)
+    purge_step = current_iteration + 1 if current_iteration > 0 else None
+    writer = SummaryWriter(
+        log_dir=str(log_dir),
+        purge_step=purge_step,
     )
-    writer = SummaryWriter(log_dir)
+    print(f"Resuming training at iteration: {current_iteration}")
+    print(f"TensorBoard log directory: {log_dir}")
 
     loss_list = []
 
@@ -132,8 +164,8 @@ if __name__ =="__main__":
 
     try:
         while current_iteration < total_training_iterations:
-            #cycle through every overfit scene equally: 0, 1, ..., 31, then repeat
-            curr_seed = current_iteration % 32
+            #cycle through every second-round scene equally: 0, 1, ..., 255, then repeat
+            curr_seed = current_iteration % 256
             current_iteration += 1
             env.update()
             env.new_scene(seed=curr_seed)
@@ -171,6 +203,7 @@ if __name__ =="__main__":
             if current_iteration % 100 == 0:
                 print(f"SAVING MODEL AT ITERATION: {current_iteration}")
                 model.save_checkpoint()
+                save_current_iteration(current_iteration)
                 average_loss = sum(loss_list)/20.0
                 print(f"LAST LOSS AVG: {average_loss}")
 
