@@ -275,6 +275,12 @@ class Enviornment_Randomizer:
             # maximum allowable offsets to keep the object within the plate
             max_x_offset = plate_radius - obj_x_size / 2
             max_y_offset = plate_radius - obj_y_size / 2
+
+            """TESTING MAKING THE OFFSETS CLOSER"""
+
+            max_x_offset = max_x_offset/2.0
+            max_y_offset = max_y_offset/2.0
+
             if max_x_offset < 0 or max_y_offset < 0:
                 raise ValueError(
                     f"Body '{object_name}' is too large for the plate"

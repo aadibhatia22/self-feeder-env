@@ -15,9 +15,13 @@ class Randomization_Constants:
             "deformed_slice_instance_2",
             "rod_instance_2",
             "block_instance_2",
+            "full_slice_instance_3",
+            "deformed_slice_instance_3",
+            "rod_instance_3",
+            "block_instance_3",
         ]
 
-        # Use all eight wrapper bodies for every food randomization.
+        # Use all twelve wrapper bodies for every food randomization.
         self.size_randomization_body_names = self.all_food_body_names.copy()
         self.rotation_randomization_body_names = self.all_food_body_names.copy()
         self.number_randomization_body_names = self.all_food_body_names.copy()
@@ -26,32 +30,32 @@ class Randomization_Constants:
         self.visibility_check_body_names = self.all_food_body_names.copy()
 
         self.total_food_slots = len(self.all_food_body_names)
-        self.minimum_objects = 1
+        self.minimum_objects = 8
         self.maximum_objects = len(self.number_randomization_body_names)
         self.in_scene_z_coordinate = 0.18
         self.out_of_scene_z_coordinate = -0.18
 
         self.primitive_size_ranges = {
             "sphere": [
-                [0.003, 0.016],
+                [0.002, 0.014],
             ],
             "capsule": [
-                [0.003, 0.009],
-                [0.008, 0.025],
+                [0.002, 0.008],
+                [0.006, 0.022],
             ],
             "ellipsoid": [
-                [0.014, 0.035],
-                [0.014, 0.038],
-                [0.003, 0.012],
+                [0.010, 0.032],
+                [0.010, 0.034],
+                [0.002, 0.010],
             ],
             "cylinder": [
-                [0.014, 0.034],
-                [0.003, 0.012],
+                [0.010, 0.031],
+                [0.002, 0.010],
             ],
             "box": [
-                [0.012, 0.034],
-                [0.010, 0.030],
-                [0.005, 0.022],
+                [0.009, 0.031],
+                [0.008, 0.027],
+                [0.004, 0.019],
             ],
         }
 

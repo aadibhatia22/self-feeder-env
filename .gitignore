@@ -15,3 +15,4 @@
 
 # U-Net checkpoints are local training artifacts and exceed GitHub's file limit.
 /CODE/Enviornment/Model/UNet/tmp/**/*.pt
+.gstack/

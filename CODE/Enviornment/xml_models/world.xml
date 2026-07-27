@@ -24,6 +24,11 @@
 
         <mesh name = "plate_visual" file="plate/PLATE.stl"/>
         <mesh name = "plate_collision" file="plate/MUJOCO_PLATE.stl"/>
+        <mesh name="irregular_food_block_mesh"
+            file="irregular_food_test/Irregular Food Block.stl"
+            scale="0.55 0.55 0.55"/>
+        <mesh name="food_slice_concave_mesh"
+            file="irregular_food_test/food_slice_concave.stl"/>
 
         <texture name="apriltag_36h11_0"
             type="2d"
@@ -111,6 +116,36 @@
         </body>
         <body name="block_instance_2" pos="0.10 0.06 -0.18">
             <attach model="block" prefix="block_2"/>
+        </body>
+        <body name="full_slice_instance_3" pos="-0.12 -0.07 -0.18">
+            <attach model="full_slice" prefix="full_slice_3"/>
+        </body>
+        <body name="deformed_slice_instance_3" pos="0.02 -0.07 -0.18">
+            <attach model="deformed_slice" prefix="deformed_slice_3"/>
+        </body>
+        <body name="rod_instance_3" pos="-0.10 0.07 -0.18">
+            <attach model="rod" prefix="rod_3"/>
+        </body>
+        <body name="block_instance_3" pos="0.10 0.06 -0.18">
+            <attach model="block" prefix="block_3"/>
+        </body>
+
+        <!-- Irregular test foods stay out of scene until a notebook moves them in. -->
+        <body name="irregular_food_block_instance" pos="0 0 -0.18">
+            <geom name="irregular_food_block_geom"
+                type="mesh"
+                mesh="irregular_food_block_mesh"
+                rgba="0.88 0.72 0.36 1"
+                contype="0"
+                conaffinity="0"/>
+        </body>
+        <body name="food_slice_concave_instance" pos="0 0 -0.18">
+            <geom name="food_slice_concave_geom"
+                type="mesh"
+                mesh="food_slice_concave_mesh"
+                rgba="0.78 0.24 0.16 1"
+                contype="0"
+                conaffinity="0"/>
         </body>
 
 
